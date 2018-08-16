@@ -15,29 +15,36 @@ import org.springframework.amqp.rabbit.support.CorrelationData
 import org.springframework.amqp.support.converter.SimpleMessageConverter
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import java.util.function.Consumer
 
 /**
  * @WrabbitTopic is one of the two main classes you need. The other one is @WrabbitEvent.
  */
-open class WrabbitTopic (
+open class WrabbitTopic {
 
-   val name: String,
-   private val template: RabbitTemplate = RabbitTemplate(WrabbitConnectionFactory),
-   private val exchange: HeadersExchange = HeadersExchange(name)
-
-) {
+   private val name: String
+   private val template: RabbitTemplate
+   private val exchange: HeadersExchange
    private val auditorHeaders = listOf("auditor")
 
-   companion object {
-      val logger: Logger = LoggerFactory.getLogger(WrabbitTopic::class.java)
-   }
-
-   init {
+   @JvmOverloads
+   constructor(
+      name: String,
+      template: RabbitTemplate = RabbitTemplate(WrabbitConnectionFactory),
+      exchange: HeadersExchange = HeadersExchange(name)
+   ) {
+      this.name = name
+      this.template = template
+      this.exchange = exchange
       WrabbitAdmin.declareExchange(exchange)
       logger.debug("Created new Wrabbit-Topic['${name}']")
       template.exchange = name
       template.messageConverter = SimpleMessageConverter()
       logger.debug("Create new Publisher on Wrabbit-Topic['$name'].")
+   }
+
+   companion object {
+      val logger: Logger = LoggerFactory.getLogger(WrabbitTopic::class.java)
    }
 
    internal fun <MESSAGE_TYPE, RETURN_TYPE> createAndBindQueue(queueName: String = UUID.randomUUID().toString(), headers: List<String>,
@@ -102,6 +109,11 @@ open class WrabbitTopic (
          queueName = "$name.audit.${UUID.randomUUID()}",
          listener = handleMessage,
          headers = auditorHeaders)
+   }
+
+   // helper method for our java friends
+   fun <MESSAGE_TYPE> addAuditor(handleMessage: Consumer<MESSAGE_TYPE>) {
+      auditor<MESSAGE_TYPE> { handleMessage.accept(it) }
    }
 
 }

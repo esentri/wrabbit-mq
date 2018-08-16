@@ -23,7 +23,7 @@ In addition, `auditor`s can be registered on a topic as well (not only on events
 
 ### Create your domain
 
-Example in Kotlin:
+#### Example in Kotlin:
 ```
 object TestDomain {
 
@@ -39,67 +39,117 @@ object TestDomain {
 }
 ```
 
+#### Example in Java:
+```
+public final class TestDomainJava {
+
+   public static final SimpleTopicInternal SimpleTopic = new SimpleTopicInternal();
+
+   public static final class SimpleTopicInternal extends WrabbitTopic {
+
+      public final NestedTopicInternal NestedTopic = new NestedTopicInternal();
+
+      SimpleTopicInternal() {
+         super("test.topic.simple");
+      }
+
+      public final WrabbitEvent<String, Integer> Event1_StringToNumber =
+         new WrabbitEvent<>(this, "test.topic.simple.Event1");
+
+      public final WrabbitEvent<Integer, String> Event2_NumberToString =
+         new WrabbitEvent<>(this, "test.topic.simple.Event2");
+
+
+      public static final class NestedTopicInternal extends WrabbitTopic {
+
+         NestedTopicInternal() {
+            super("test.topic.simple.nestedTopic");
+         }
+
+         public final WrabbitEvent<Integer, Integer> Event1_IncrementNumber =
+            new WrabbitEvent<>(this, "test.topic.simple.nestedTopic.Event1");
+
+         public final WrabbitEvent<Integer, Integer> Event2_DecrementNumber =
+            new WrabbitEvent<>(this, "test.topic.simple.nestedTopic.Event2");
+      }
+
+   }
+
+}
+```
+
 ### Send events
 
-Example in Kotlin:
 ```
 TestDomain.SimpleTopic.Event1.send("hello world")
-TestDomain.SimpleTopic.Event2.send(123)
 ```
 
 
 ### Send and receive
 
-Example in Kotlin:
 ```
    TestDomain.SimpleTopic.Event1.sendAndReceive("1234").thenAccept {
       LOGGER.info("Event1 received reply: $it")
-   }
-
-   TestDomain.SimpleTopic.Event2.sendAndReceive(123).thenAccept {
-      LOGGER.info("Event2 received reply: $it")
    }
 ```
 
 
 ### Listen on an event
 
-Example in Kotlin:
+#### Example in Kotlin:
 ```
    TestDomain.SimpleTopic.Event1.listener {
       LOGGER.info("received string: $it")
    }
+```
 
-   TestDomain.SimpleTopic.Event2.listener {
-      LOGGER.info("received number: $it")
-   }
+#### Example in Java:
+```
+TestDomainJava.SimpleTopic.Event1_StringToNumber.addListener(string -> 
+   LOGGER.info("SimpleTopic.Event1.listener: " + string));
 ```
 
 
 ### Audit an event
 
-Example in Kotlin:
+#### Example in Kotlin:
 ```
    TestDomain.SimpleTopic.Event1.auditor {
       LOGGER.info("Event1: received string: $it")
    }
+```
 
-   TestDomain.SimpleTopic.Event2.auditor {
-      LOGGER.info("Event2: received number: $it")
-   }
+#### Example in Java:
+```
+TestDomain.SimpleTopic.Event1.addAuditor {
+   LOGGER.info("Event1: received string: $it")
+}
 ```
 
 ### Audit a topic
 
-Example in Kotlin:
+#### Example in Kotlin:
 ```
-   TestDomain.SimpleTopic.auditor<Any> {
-      LOGGER.info("SimpleTopic: received: $it")
-   }
+// audit an event
+TestDomain.SimpleTopic.Event1.auditor<String> {
+   LOGGER.info("SimpleTopic: received: $it")
+}
 
-   TestDomain.SimpleTopic.NestedTopic.auditor<Any> {
-      LOGGER.info("NestedTopic: received: $it")
-   }
+// audit a whole topic
+TestDomain.SimpleTopic.auditor<Any> {
+   LOGGER.info("SimpleTopic: received: $it")
+}
+```
+
+#### Example in Java:
+```
+// audit an event
+TestDomainJava.SimpleTopic.Event1.addAuditor(string ->
+   LOGGER.info("SimpleTopic.Event1.auditor: " + string));
+
+// audit a whole topic
+TestDomainJava.SimpleTopic.addAuditor(obj ->
+   LOGGER.info("SimpleTopic.auditor: " + obj));
 ```
 
 ## Configuration
