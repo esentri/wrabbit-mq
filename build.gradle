@@ -1,0 +1,204 @@
+buildscript {
+   ext.project_version = '1.0.0'
+   ext.group_id = 'com.esentri.oss'
+   ext.project_name = 'wrabbit-mq'
+
+   ext.kotlin_version = '1.2.60' // if you change the version here, also change it in the plugin section
+   ext.spring_amqp_version = '2.0.5.RELEASE'
+   ext.dokka_version = '0.9.17'
+
+   ext.slf4j_version = '1.7.25'
+   ext.logback_version = '1.2.3'
+
+   repositories {
+      mavenCentral()
+   }
+
+   dependencies {
+      classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+      classpath "org.jetbrains.dokka:dokka-gradle-plugin:${dokka_version}"
+   }
+}
+
+plugins {
+   id 'org.jetbrains.kotlin.jvm' version '1.2.60'
+}
+
+repositories {
+   mavenCentral()
+}
+
+apply plugin: 'kotlin'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+apply plugin: 'org.jetbrains.dokka'
+
+version = project_version
+group = group_id
+
+def javaDocDir = "$buildDir/javadoc"
+
+dependencies {
+   compile "org.springframework.amqp:spring-amqp:$spring_amqp_version"
+   compile "org.springframework.amqp:spring-rabbit:$spring_amqp_version"
+   compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+   compile "org.slf4j:slf4j-api:$slf4j_version"
+   compile "ch.qos.logback:logback-classic:$logback_version"
+}
+
+
+compileKotlin {
+   kotlinOptions {
+      jvmTarget = "1.8"
+   }
+}
+
+compileTestKotlin {
+   kotlinOptions {
+      jvmTarget = "1.8"
+   }
+}
+
+task sourceJar(type: Jar) {
+   classifier = 'sources'
+   from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: dokka) {
+   classifier "javadoc"
+   from javaDocDir
+}
+
+artifacts {
+   archives jar
+   archives sourceJar
+   archives javadocJar
+}
+
+
+publishing {
+   publications {
+      mavenJava(MavenPublication) {
+         customizePom(pom)
+         groupId group_id
+         artifactId project_name
+         version project_version
+
+         from components.java
+
+         // create the sign pom artifact
+         pom.withXml {
+            def pomFile = file("${project.buildDir}/generated-pom.xml")
+            writeTo(pomFile)
+            def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+            artifact(pomAscFile) {
+               classifier = null
+               extension = 'pom.asc'
+            }
+         }
+
+         artifact(sourceJar) {
+            classifier = 'sources'
+         }
+         artifact(javadocJar) {
+            classifier = 'javadoc'
+         }
+
+         // create the signed artifacts
+         project.tasks.signArchives.signatureFiles.each {
+            artifact(it) {
+               def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+               if (matcher.find()) {
+                  classifier = matcher.group(1)
+               } else {
+                  classifier = null
+               }
+               extension = 'jar.asc'
+            }
+         }
+      }
+   }
+
+   repositories {
+      maven {
+         url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+         credentials {
+            username sonatypeUsername
+            password sonatypePassword
+         }
+      }
+   }
+}
+
+def customizePom(pom) {
+   pom.withXml {
+      def root = asNode()
+
+      // eliminate test-scoped dependencies (no need in maven central POMs)
+      root.dependencies.removeAll { dep ->
+         dep.scope == "test"
+      }
+
+      // add all items necessary for maven central publication
+      root.children().last() + {
+         resolveStrategy = Closure.DELEGATE_FIRST
+
+         description 'A simple wrapper for RabbitMQ'
+         name project_name
+         url 'https://github.com/esentri/wrabbit-mq'
+         organization {
+            name 'com.github.esentri'
+            url 'https://github.com/esentri'
+         }
+         issueManagement {
+            system 'GitHub'
+            url 'https://github.com/esentri/wrabbit-mq/issues'
+         }
+         licenses {
+            license {
+               name 'MIT'
+               url 'https://github.com/esentri/wrabbit-mq/blob/master/README.md'
+               distribution 'repo'
+            }
+         }
+         scm {
+            url 'https://github.com/esentri/wrabbit-mq'
+            connection 'scm:git:git://github.com/esentri/wrabbit-mq.git'
+            developerConnection 'scm:git:ssh://git@github.com:esentri/wrabbit-mq.git'
+         }
+         developers {
+            developer {
+               name 'Maurice Müller'
+               organization 'esentri AG'
+               organizationUrl 'https://www.esentri.com/'
+            }
+            developer {
+               name 'esentri AG'
+               organization 'esentri AG'
+               organizationUrl 'https://www.esentri.com/'
+            }
+         }
+      }
+   }
+}
+
+model {
+   tasks.generatePomFileForMavenJavaPublication {
+      destination = file("$buildDir/generated-pom.xml")
+   }
+   tasks.publishMavenJavaPublicationToMavenLocal {
+      dependsOn project.tasks.signArchives
+   }
+   tasks.publishMavenJavaPublicationToMavenRepository {
+      dependsOn project.tasks.signArchives
+   }
+}
+
+signing {
+   sign configurations.archives
+}
+
+dokka {
+   outputFormat = 'javadoc'
+   outputDirectory = javaDocDir
+}
