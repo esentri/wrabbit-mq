@@ -1,7 +1,30 @@
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.esentri.oss/wrabbit-mq/badge.svg)](https://search.maven.org/artifact/com.esentri.oss/wrabbit-mq)
+
+
 # WRABBIT-MQ
 
 `Wrabbit-MQ` is a light-weight wrapper for RabbitMQ. It simplifies the usage of RabbitMQ and has
 built-in support for the `broadcast-response`-pattern.
+
+## Dependency
+
+#### Maven
+
+```
+<dependency>
+  <groupId>com.esentri.oss</groupId>
+  <artifactId>wrabbit-mq</artifactId>
+  <version>1.1.1</version>
+  <type>pom</type>
+</dependency>
+```
+
+#### Gradle
+
+```
+compile 'com.esentri.oss:wrabbit-mq:1.1.1'
+```
+
 
 ## Usage
 
