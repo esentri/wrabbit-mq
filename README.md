@@ -109,24 +109,7 @@ TestDomainJava.SimpleTopic.Event1_StringToNumber.addListener(string ->
    LOGGER.info("SimpleTopic.Event1.listener: " + string));
 ```
 
-
-### Audit an event
-
-#### Example in Kotlin:
-```
-   TestDomain.SimpleTopic.Event1.auditor {
-      LOGGER.info("Event1: received string: $it")
-   }
-```
-
-#### Example in Java:
-```
-TestDomain.SimpleTopic.Event1.addAuditor {
-   LOGGER.info("Event1: received string: $it")
-}
-```
-
-### Audit a topic
+### Audit events or topics
 
 #### Example in Kotlin:
 ```

@@ -1,5 +1,5 @@
 buildscript {
-   ext.project_version = '1.0.0'
+   ext.project_version = '1.1.1'
    ext.group_id = 'com.esentri.oss'
    ext.project_name = 'wrabbit-mq'
 
