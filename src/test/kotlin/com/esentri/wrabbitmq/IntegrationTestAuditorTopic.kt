@@ -7,13 +7,13 @@ fun main(args: Array<String>) {
    var wait = 0
    val waitNumber = 4
 
-   TestDomain.SimpleTopic.auditor<Any> {
-      LOGGER.info("SimpleTopic: received: $it")
+   TestDomain.SimpleTopic.listener { m: Any ->
+      LOGGER.info("SimpleTopic: received: $m")
       wait++
    }
 
-   TestDomain.SimpleTopic.NestedTopic.auditor<Any> {
-      LOGGER.info("NestedTopic: received: $it")
+   TestDomain.SimpleTopic.NestedTopic.listener { m: Any ->
+      LOGGER.info("NestedTopic: received: $m")
       wait++
    }
 

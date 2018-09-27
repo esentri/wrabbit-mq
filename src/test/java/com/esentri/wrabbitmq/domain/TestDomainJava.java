@@ -1,6 +1,6 @@
 package com.esentri.wrabbitmq.domain;
 
-import com.esentri.wrabbitmq.WrabbitEvent;
+import com.esentri.wrabbitmq.WrabbitChannel;
 import com.esentri.wrabbitmq.WrabbitTopic;
 
 public final class TestDomainJava {
@@ -15,11 +15,11 @@ public final class TestDomainJava {
          super("test.topic.simple");
       }
 
-      public final WrabbitEvent<String, Integer> Event1_StringToNumber =
-         new WrabbitEvent<>(this, "test.topic.simple.Event1");
+      public final WrabbitChannel<String, Integer> Event1_StringToNumber =
+         new WrabbitChannel<>(this, "test.topic.simple.Event1");
 
-      public final WrabbitEvent<Integer, String> Event2_NumberToString =
-         new WrabbitEvent<>(this, "test.topic.simple.Event2");
+      public final WrabbitChannel<Integer, String> Event2_NumberToString =
+         new WrabbitChannel<>(this, "test.topic.simple.Event2");
 
 
       public static final class NestedTopicInternal extends WrabbitTopic {
@@ -28,11 +28,11 @@ public final class TestDomainJava {
             super("test.topic.simple.nestedTopic");
          }
 
-         public final WrabbitEvent<Integer, Integer> Event1_IncrementNumber =
-            new WrabbitEvent<>(this, "test.topic.simple.nestedTopic.Event1");
+         public final WrabbitChannel<Integer, Integer> Event1_IncrementNumber =
+            new WrabbitChannel<>(this, "test.topic.simple.nestedTopic.Event1");
 
-         public final WrabbitEvent<Integer, Integer> Event2_DecrementNumber =
-            new WrabbitEvent<>(this, "test.topic.simple.nestedTopic.Event2");
+         public final WrabbitChannel<Integer, Integer> Event2_DecrementNumber =
+            new WrabbitChannel<>(this, "test.topic.simple.nestedTopic.Event2");
       }
 
    }

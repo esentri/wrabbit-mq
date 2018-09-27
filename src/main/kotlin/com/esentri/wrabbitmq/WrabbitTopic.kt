@@ -1,43 +1,38 @@
 package com.esentri.wrabbitmq
 
 import com.esentri.wrabbitmq.exceptions.WrabbitMQNoReplyException
-import org.springframework.amqp.core.HeadersExchange
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.core.BindingBuilder
-import org.springframework.amqp.core.Message
-import org.springframework.amqp.core.MessageProperties
+import org.springframework.amqp.core.*
 import org.springframework.amqp.core.Queue
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer
-import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
 import org.springframework.amqp.rabbit.support.CorrelationData
 import org.springframework.amqp.support.converter.SimpleMessageConverter
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.function.Consumer
 
 /**
- * @WrabbitTopic is one of the two main classes you need. The other one is @WrabbitEvent.
+ * @WrabbitTopic is one of the two main classes you need. The other one is @WrabbitChannel.
  */
-open class WrabbitTopic {
 
-   private val name: String
-   private val template: RabbitTemplate
-   private val exchange: HeadersExchange
-   private val auditorHeaders = listOf("auditor")
+// (1) Rename WrabbitChannel to WrabbitChannnel
+// (1.1) with following channel-types
+//       - send-channel
+//       - send-and-reply-channel
+//       - send-typed-channel
+//       - send-and-reply-typed-channel
 
-   @JvmOverloads
-   constructor(
-      name: String,
-      template: RabbitTemplate = RabbitTemplate(WrabbitConnectionFactory),
-      exchange: HeadersExchange = HeadersExchange(name)
-   ) {
-      this.name = name
-      this.template = template
-      this.exchange = exchange
+// (2) Provide WrabbitChannelBuilder,
+// (3) Replace Auditor with Topic.Listener.
+// (4) Enable user defined Topic.Listener.
+//
+open class WrabbitTopic @JvmOverloads constructor(private val name: String,
+                                                  private val template: RabbitTemplate  = RabbitTemplate(WrabbitConnectionFactory),
+                                                  private val exchange: HeadersExchange = HeadersExchange(name)) {
+   init {
       WrabbitAdmin.declareExchange(exchange)
-      logger.debug("Created new Wrabbit-Topic['${name}']")
+      logger.debug("Created new Wrabbit-Topic['$name']")
       template.exchange = name
       template.messageConverter = SimpleMessageConverter()
       logger.debug("Create new Publisher on Wrabbit-Topic['$name'].")
@@ -47,73 +42,82 @@ open class WrabbitTopic {
       val logger: Logger = LoggerFactory.getLogger(WrabbitTopic::class.java)
    }
 
-   internal fun <MESSAGE_TYPE, RETURN_TYPE> createAndBindQueue(queueName: String = UUID.randomUUID().toString(), headers: List<String>,
-                                                               replier: ((MESSAGE_TYPE) -> RETURN_TYPE)? = null,
-                                                               listener: ((MESSAGE_TYPE) -> Unit)? = null):
-      Queue {
+   internal fun <M, R> createAndBindQueue(queueName: String = UUID.randomUUID().toString(),
+                                          headers: List<String>,
+                                          replier:  IMessageReplier<M, R>? = null,
+                                          listener: IMessageListener<M>? = null):Queue {
       val queue = Queue(queueName)
       WrabbitAdmin.declareQueue(queue)
       logger.debug("Bind Queue['$queueName'] on Wrabbit-Topic['$name'::$headers].")
       WrabbitAdmin.declareBinding(BindingBuilder.bind(queue).to(exchange).whereAll(*headers.toTypedArray()).exist())
-      if (replier != null) addReplier(queue, replier)
+      if (replier  != null) addReplier(queue, replier)
       if (listener != null) addListener(queue, listener)
       return queue
    }
 
-   private fun <MESSAGE_TYPE, RETURN_TYPE> addReplier(queue: Queue, handleMessage: (MESSAGE_TYPE) -> RETURN_TYPE) {
+   private fun <M, R> addReplier(queue: Queue, replier: IMessageReplier<M, R>) {
       val container = SimpleMessageListenerContainer()
       container.connectionFactory = WrabbitConnectionFactory
       container.setQueueNames(queue.name)
-      container.messageListener =
-         MessageListenerAdapter(java.util.function.Function<MESSAGE_TYPE, RETURN_TYPE> { handleMessage(it) }, "apply")
+      container.messageListener = WrabbitMessageListenerAdapter(template, replier)
       container.start()
    }
 
-   private fun <MESSAGE_TYPE> addListener(queue: Queue, handleMessage: (MESSAGE_TYPE) -> Unit) {
+   private fun <M> addListener(queue: Queue, listener: IMessageListener<M>) {
       val container = SimpleMessageListenerContainer()
       container.connectionFactory = WrabbitConnectionFactory
       container.setQueueNames(queue.name)
-      container.messageListener =
-         MessageListenerAdapter(java.util.function.Consumer<MESSAGE_TYPE> { handleMessage(it) }, "accept")
+      container.messageListener = WrabbitMessageListenerAdapter<M, Unit>(template, replier = null, listener = listener)
       container.start()
    }
 
-   internal fun <T> send(message: T, headers: List<String>) {
-      logger.debug("Publish Message['$message'] on Wrabbit-Topic['$name::$headers'].")
-      val rabbitMessage: Message = template.messageConverter.toMessage(message, messageProperties(headers))
+   internal fun <T> send(message: T, properties: List<Pair<String, Any?>>) {
+      logger.debug("Publish Message['$message'] on Wrabbit-Topic['$name::$properties'].")
+      val rabbitMessage: Message = template.messageConverter.toMessage(message, toMessageProperties(properties))
       template.send(rabbitMessage)
    }
 
-   internal fun <MESSAGE_TYPE, RETURN_TYPE> sendAndReceive(message: MESSAGE_TYPE, headers: List<String>):
-      CompletableFuture<RETURN_TYPE> {
+   internal fun <MESSAGE_TYPE, RETURN_TYPE> sendAndReceive(message: MESSAGE_TYPE, properties: List<Pair<String, Any?>>): CompletableFuture<RETURN_TYPE> {
       return CompletableFuture.supplyAsync {
-         logger.debug("Publish Request-Message['$message'] on Wrabbit-Topic['$name'::$headers].")
-         val rabbitMessage: Message = template.messageConverter.toMessage(message, messageProperties(headers))
-         var rabbitReply: Message = template.sendAndReceive(rabbitMessage, CorrelationData(UUID.randomUUID().toString()))
-            ?: throw WrabbitMQNoReplyException(name)
-         val replyData: Any = template.messageConverter.fromMessage(rabbitReply)
-         logger.debug("Received Reply-Message[${replyData.javaClass.simpleName} = '$replyData'] from Request-Message['$message'].")
+         logger.debug("Publish Request-Message['$message'] on Wrabbit-Topic['$name'::${WrabbitHeader.extractStandardHeader(properties)}].")
+         val msg: Message = template.messageConverter.toMessage(message, toMessageProperties(properties))
+         val correlation  = CorrelationData(UUID.randomUUID().toString())
+         val reply: Message = template.sendAndReceive(msg, correlation) ?: throw WrabbitMQNoReplyException(name)
+         val result: Any = template.messageConverter.fromMessage(reply)
+         logger.debug("Received Reply-Message[${result.javaClass.simpleName} = '$result']" + " from Request-Message['$msg'].")
          @Suppress("UNCHECKED_CAST")
-         return@supplyAsync replyData as RETURN_TYPE
+         return@supplyAsync result as RETURN_TYPE
       }
    }
 
-   private fun messageProperties(headers: List<String>): MessageProperties {
-      val messageProperties = MessageProperties()
-      headers.forEach { messageProperties.setHeader(it, null) }
-      return messageProperties
-   }
-
-   fun <MESSAGE_TYPE> auditor(handleMessage: (MESSAGE_TYPE) -> Unit) {
+   fun <MESSAGE_TYPE> listener(listener: IMessageListener<MESSAGE_TYPE>) {
       createAndBindQueue<MESSAGE_TYPE, Unit>(
-         queueName = "$name.audit.${UUID.randomUUID()}",
-         listener = handleMessage,
-         headers = auditorHeaders)
+              queueName = "$name.${WrabbitHeader.TOPIC_LISTENER}.${UUID.randomUUID()}",
+              headers   = listOf(WrabbitHeader.TOPIC_LISTENER),
+              listener  = listener)
    }
 
-   // helper method for our java friends
-   fun <MESSAGE_TYPE> addAuditor(handleMessage: Consumer<MESSAGE_TYPE>) {
-      auditor<MESSAGE_TYPE> { handleMessage.accept(it) }
+   fun <MESSAGE_TYPE> listener(listen: MsgListener<MESSAGE_TYPE>) {
+      val listenObj = object : MessageListener<MESSAGE_TYPE> {
+         override fun listen(message: MESSAGE_TYPE) {
+            listen.invoke(message)
+         }
+      }
+      listener(listenObj)
    }
 
+   fun <MESSAGE_TYPE> listener(listen: MsgCtxListener<MESSAGE_TYPE>) {
+      val listenObj = object : MessageWithContextListener<MESSAGE_TYPE> {
+         override fun listen(message: MESSAGE_TYPE, context: Map<String, Any?>) {
+            listen.invoke(message, context)
+         }
+      }
+      listener(listenObj)
+   }
+
+   private fun toMessageProperties(entries: List<Pair<String, Any?>>): MessageProperties {
+      val mp = MessageProperties()
+      entries.forEach { mp.headers[it.first] = it.second }
+      return mp
+   }
 }

@@ -12,9 +12,15 @@ public class IntegrationTest {
 
    @Test
    public void testAuditor() {
-      TestDomainJava.SimpleTopic.Event1_StringToNumber.addAuditor(string -> LOGGER.info("SimpleTopic.Event1.auditor: " + string));
-      TestDomainJava.SimpleTopic.Event2_NumberToString.addAuditor(number -> LOGGER.info("SimpleTopic.Event2.auditor: " + number));
-      TestDomainJava.SimpleTopic.addAuditor(obj -> LOGGER.info("SimpleTopic.auditor: " + obj));
+      TestDomainJava.SimpleTopic.Event1_StringToNumber.listener(
+          (MessageListener<String>) string -> LOGGER.info("SimpleTopic.Event1.auditor: " + string)
+      );
+      TestDomainJava.SimpleTopic.Event2_NumberToString.listener(
+          (MessageListener<Integer>) number -> LOGGER.info("SimpleTopic.Event2.auditor: " + number)
+      );
+      TestDomainJava.SimpleTopic.listener(
+          (MessageListener<Object>) obj -> LOGGER.info("SimpleTopic.auditor: " + obj)
+      );
 
       TestDomainJava.SimpleTopic.Event1_StringToNumber.send("1234");
       TestDomainJava.SimpleTopic.Event2_NumberToString.send(321);
@@ -24,8 +30,12 @@ public class IntegrationTest {
 
    @Test
    public void testListener() {
-      TestDomainJava.SimpleTopic.Event1_StringToNumber.addListener(string -> LOGGER.info("SimpleTopic.Event1.listener: " + string));
-      TestDomainJava.SimpleTopic.Event2_NumberToString.addListener(number -> LOGGER.info("SimpleTopic.Event2.listener: " + number));
+      TestDomainJava.SimpleTopic.Event1_StringToNumber.listener(
+          (MessageListener<String>) string -> LOGGER.info("SimpleTopic.Event1.listener: " + string)
+      );
+      TestDomainJava.SimpleTopic.Event2_NumberToString.listener(
+          (MessageListener<Integer>) number -> LOGGER.info("SimpleTopic.Event2.listener: " + number)
+      );
 
       TestDomainJava.SimpleTopic.Event1_StringToNumber.send("1234");
       TestDomainJava.SimpleTopic.Event2_NumberToString.send(321);
@@ -35,8 +45,8 @@ public class IntegrationTest {
 
    @Test
    public void testReplier() {
-      TestDomainJava.SimpleTopic.NestedTopic.Event1_IncrementNumber.addReplier(number -> ++number);
-      TestDomainJava.SimpleTopic.NestedTopic.Event2_DecrementNumber.addReplier(number -> --number);
+      TestDomainJava.SimpleTopic.NestedTopic.Event1_IncrementNumber.replier(number -> ++number);
+      TestDomainJava.SimpleTopic.NestedTopic.Event2_DecrementNumber.replier(number -> --number);
 
       TestDomainJava.SimpleTopic.NestedTopic.Event1_IncrementNumber
          .sendAndReceive(7).thenAccept(returnValue -> LOGGER.info("Incremented number: " + returnValue));

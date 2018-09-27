@@ -7,14 +7,14 @@ fun main(args: Array<String>) {
    val waitNumber = 2
    val sentNumber = 7
 
-   TestDomain.SimpleTopic.NestedTopic.Event1_IncrementNumber.replier {
-      LOGGER.info("Event1: received string: $it")
-      it+1
+   TestDomain.SimpleTopic.NestedTopic.Event1_IncrementNumber.replier { m:Int ->
+      LOGGER.info("Event1: received string: $m")
+      m + 1
    }
 
-   TestDomain.SimpleTopic.NestedTopic.Event2_DecrementNumber.replier {
-      LOGGER.info("Event2: received number: $it")
-      it-1
+   TestDomain.SimpleTopic.NestedTopic.Event2_DecrementNumber.replier { m:Int ->
+      LOGGER.info("Event2: received number: $m")
+      m - 1
    }
 
    TestDomain.SimpleTopic.NestedTopic.Event1_IncrementNumber.sendAndReceive(sentNumber).thenAccept {

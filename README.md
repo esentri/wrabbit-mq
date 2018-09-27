@@ -51,12 +51,12 @@ In addition, `auditor`s can be registered on a topic as well (not only on events
 object TestDomain {
 
    object SimpleTopic : WrabbitTopic(name = "test.topic.simple") {
-      val Event1 = WrabbitEvent<String, Int>(this, "test.topic.simple.Event1")
-      val Event2 = WrabbitEvent<Int, String>(this, "test.topic.simple.Event2")
+      val Event1 = WrabbitChannel<String, Int>(this, "test.topic.simple.Event1")
+      val Event2 = WrabbitChannel<Int, String>(this, "test.topic.simple.Event2")
 
       object NestedTopic : WrabbitTopic(name = "test.topic.simple.nestedTopic") {
-         val Event1 = WrabbitEvent<Int, Int>(this, "test.topic.simple.nestedTopic.Event1")
-         val Event2 = WrabbitEvent<Int, Int>(this, "test.topic.simple.nestedTopic.Event2")
+         val Event1 = WrabbitChannel<Int, Int>(this, "test.topic.simple.nestedTopic.Event1")
+         val Event2 = WrabbitChannel<Int, Int>(this, "test.topic.simple.nestedTopic.Event2")
       }
    }
 }
@@ -76,11 +76,11 @@ public final class TestDomainJava {
          super("test.topic.simple");
       }
 
-      public final WrabbitEvent<String, Integer> Event1_StringToNumber =
-         new WrabbitEvent<>(this, "test.topic.simple.Event1");
+      public final WrabbitChannel<String, Integer> Event1_StringToNumber =
+         new WrabbitChannel<>(this, "test.topic.simple.Event1");
 
-      public final WrabbitEvent<Integer, String> Event2_NumberToString =
-         new WrabbitEvent<>(this, "test.topic.simple.Event2");
+      public final WrabbitChannel<Integer, String> Event2_NumberToString =
+         new WrabbitChannel<>(this, "test.topic.simple.Event2");
 
 
       public static final class NestedTopicInternal extends WrabbitTopic {
@@ -89,11 +89,11 @@ public final class TestDomainJava {
             super("test.topic.simple.nestedTopic");
          }
 
-         public final WrabbitEvent<Integer, Integer> Event1_IncrementNumber =
-            new WrabbitEvent<>(this, "test.topic.simple.nestedTopic.Event1");
+         public final WrabbitChannel<Integer, Integer> Event1_IncrementNumber =
+            new WrabbitChannel<>(this, "test.topic.simple.nestedTopic.Event1");
 
-         public final WrabbitEvent<Integer, Integer> Event2_DecrementNumber =
-            new WrabbitEvent<>(this, "test.topic.simple.nestedTopic.Event2");
+         public final WrabbitChannel<Integer, Integer> Event2_DecrementNumber =
+            new WrabbitChannel<>(this, "test.topic.simple.nestedTopic.Event2");
       }
 
    }

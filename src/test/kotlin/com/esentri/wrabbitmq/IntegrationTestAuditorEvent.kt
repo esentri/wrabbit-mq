@@ -7,13 +7,13 @@ fun main(args: Array<String>) {
    var wait = 0
    val waitNumber = 2
 
-   TestDomain.SimpleTopic.Event1_StringToNumber.auditor {
-      LOGGER.info("Event1: received string: $it")
+   TestDomain.SimpleTopic.Event1_StringToNumber.listener{ m: String ->
+      LOGGER.info("Event1: received string: $m")
       wait++
    }
 
-   TestDomain.SimpleTopic.Event2_NumberToString.auditor {
-      LOGGER.info("Event2: received number: $it")
+   TestDomain.SimpleTopic.Event2_NumberToString.listener { m :Int ->
+      LOGGER.info("Event2: received number: $m")
       wait++
    }
 
