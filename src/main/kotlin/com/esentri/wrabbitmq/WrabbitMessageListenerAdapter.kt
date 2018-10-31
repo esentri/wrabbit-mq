@@ -1,8 +1,10 @@
 package com.esentri.wrabbitmq
 
 import com.rabbitmq.client.Channel
+import org.springframework.amqp.AmqpRejectAndDontRequeueException
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
 import java.lang.IllegalStateException
 
@@ -36,7 +38,13 @@ internal class WrabbitMessageListenerAdapter<M, R>(
       }
       catch (th: Throwable) {
          th.printStackTrace()
-         throw IllegalStateException(th)
+         // Throwing a exception within an 'replier' leads
+         // in case of the rabbit default behaviour to a
+         // infinite loop on the receiver side, because the
+         // unprocessed message gets reenqeued. Throwing
+         // 'AmqpRejectAndDontRequeueException' indicates
+         // the basic.reject will be sent with requeue=false.
+         throw AmqpRejectAndDontRequeueException(th)
       }
    }
 }

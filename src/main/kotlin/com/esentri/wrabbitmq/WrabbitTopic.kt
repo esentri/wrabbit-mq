@@ -82,6 +82,10 @@ open class WrabbitTopic @JvmOverloads constructor(private val name: String,
          logger.debug("Publish Request-Message['$message'] on Wrabbit-Topic['$name'::${WrabbitHeader.extractStandardHeader(properties)}].")
          val msg: Message = template.messageConverter.toMessage(message, toMessageProperties(properties))
          val correlation  = CorrelationData(UUID.randomUUID().toString())
+
+
+
+
          val reply: Message = template.sendAndReceive(msg, correlation) ?: throw WrabbitMQNoReplyException(name)
          val result: Any = template.messageConverter.fromMessage(reply)
          logger.debug("Received Reply-Message[${result.javaClass.simpleName} = '$result']" + " from Request-Message['$msg'].")
