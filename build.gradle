@@ -1,9 +1,9 @@
 buildscript {
-   ext.project_version = '2.0.2'
+   ext.project_version = '2.0.3'
    ext.group_id = 'com.esentri.oss'
    ext.project_name = 'wrabbit-mq'
 
-   ext.kotlin_version = '1.2.60' // if you change the version here, also change it in the plugin section
+   ext.kotlin_version = '1.3.10' // if you change the version here, also change it in the plugin section
    ext.spring_amqp_version = '2.0.5.RELEASE'
    ext.dokka_version = '0.9.17'
 
@@ -21,7 +21,7 @@ buildscript {
 }
 
 plugins {
-   id 'org.jetbrains.kotlin.jvm' version '1.2.60'
+   id 'org.jetbrains.kotlin.jvm' version '1.3.10'
 }
 
 repositories {
