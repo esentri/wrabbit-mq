@@ -4,7 +4,7 @@ buildscript {
    ext.project_name = 'wrabbit-mq'
 
    ext.kotlin_version = '1.3.10' // if you change the version here, also change it in the plugin section
-   ext.spring_amqp_version = '2.0.5.RELEASE'
+   ext.amqp_client_version = '5.5.0'
    ext.dokka_version = '0.9.17'
 
    ext.slf4j_version = '1.7.25'
@@ -40,8 +40,7 @@ group = group_id
 def javaDocDir = "$buildDir/javadoc"
 
 dependencies {
-   compile "org.springframework.amqp:spring-amqp:$spring_amqp_version"
-   compile "org.springframework.amqp:spring-rabbit:$spring_amqp_version"
+   compile "com.rabbitmq:amqp-client:$amqp_client_version"
    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
    compile "org.slf4j:slf4j-api:$slf4j_version"
    compile "ch.qos.logback:logback-classic:$logback_version"
