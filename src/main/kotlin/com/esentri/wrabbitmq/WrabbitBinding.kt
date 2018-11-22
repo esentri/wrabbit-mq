@@ -15,8 +15,8 @@ enum class WrabbitDeliveryMode(val rabbitKey: Int) {
 class WrabbitBinding(
    val routingKey: String = "",
    val bindingArguments: Map<String, Any> = emptyMap(),
-   val contentTypePublish: WrabbitContentType = WrabbitContentType.PLAIN_TEXT,
-   val contentTypeReceive: WrabbitContentType = WrabbitContentType.PLAIN_TEXT,
+   val contentTypePublish: WrabbitContentType = WrabbitContentType.OCTET_STREAM,
+   val contentTypeReceive: WrabbitContentType = WrabbitContentType.OCTET_STREAM,
    val deliveryMode: WrabbitDeliveryMode = WrabbitDeliveryMode.PERSISTENT,
    val priority: Int? = null
 ) {
@@ -26,14 +26,15 @@ class WrabbitBinding(
          .contentType(contentTypePublish.rabbitKey)
          .deliveryMode(deliveryMode.rabbitKey)
          .priority(priority)
+         .headers(bindingArguments)
          .build()
 
 
    class Header(val allHeaderExists: List<String>) {
       fun build(): WrabbitBinding {
-         val arguments: MutableMap<String, Any> = hashMapOf(Pair("x-match", "any"))
+         val arguments: MutableMap<String, Any> = hashMapOf(Pair("x-match", "all"))
          allHeaderExists.forEach {
-            arguments.put(it, "")
+            arguments[it] = ""
          }
          return WrabbitBinding(bindingArguments = arguments)
       }

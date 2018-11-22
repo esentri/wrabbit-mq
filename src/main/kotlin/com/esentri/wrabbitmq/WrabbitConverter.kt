@@ -17,6 +17,7 @@ object WrabbitConverter {
    fun <T> byteArrayToObject(byteArray: ByteArray): T {
       val bis = ByteArrayInputStream(byteArray)
       val inputStream = ObjectInputStream(bis)
+      @Suppress("UNCHECKED_CAST")
       return inputStream.readObject() as T
    }
 }

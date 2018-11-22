@@ -14,8 +14,11 @@ object WrabbitHeader {
       Pair(TOPIC_LISTENER, null)
    )
 
-   fun buildStandardHeader(queueName: String) =
-      standardHeaderList.toMutableList().add(Pair(queueName, null))
+   fun buildStandardHeader(queueName: String): MutableList<Pair<String, Nothing?>> {
+      val toMutableList = standardHeaderList.toMutableList()
+      toMutableList.add(Pair(queueName, null))
+      return toMutableList
+   }
 
    fun extractStandardHeader(header: List<Pair<String, Any?>>) = header.subList(0, HEADER_LENGTH)
 

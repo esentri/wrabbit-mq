@@ -14,7 +14,7 @@ open class WrabbitChannel<MESSAGE_TYPE : Serializable, RETURN_TYPE: Serializable
    private val header = buildStandardHeader(queueName)
 
 
-   fun replier(replier: IMessageReplier<MESSAGE_TYPE, RETURN_TYPE>) {
+   private fun replier(replier: IMessageReplier<MESSAGE_TYPE, RETURN_TYPE>) {
       topic.createAndBindQueue(
               queueName = "$queueName.$REPLIER",
               headers = listOf(queueName, REPLIER),

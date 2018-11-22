@@ -1,5 +1,6 @@
 package com.esentri.wrabbitmq
 
+import com.esentri.wrabbitmq.WrabbitAdmin.connection
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -23,7 +24,7 @@ class WrabbitMessenger(
    val publishChannel: Channel = connection.createChannel()
 ) {
 
-   fun send(messageBody: ByteArray, additionalHeaders: Map<String, Any> = emptyMap()) {
+   fun send(messageBody: ByteArray, additionalHeaders: Map<String, Any?> = emptyMap()) {
       publishChannel.basicPublish(
          exchange.name,
          binding.routingKey,
@@ -31,29 +32,31 @@ class WrabbitMessenger(
          messageBody)
    }
 
-   fun sendAndReceive(messageBody: ByteArray, additionalHeaders: Map<String, Any> = emptyMap()): CompletableFuture<GetResponse> {
-      return CompletableFuture.supplyAsync {
-         val returnQueue = WrabbitAdmin.returnQueue()
-         val amqpProperties = createStandardProperties(additionalHeaders).builder()
-            .replyTo(returnQueue.name)
-            .correlationId(UUID.randomUUID().toString())
-            .build()
-         val ownChannel = connection.createChannel()
-         ownChannel.basicPublish(
-            exchange.name,
-            binding.routingKey,
-            amqpProperties,
-            messageBody)
-         val reply = ownChannel.basicGet(returnQueue.name, false)
-         ownChannel.close()
-         return@supplyAsync reply
-      }
+   fun sendAndReceive(messageBody: ByteArray, additionalHeaders: Map<String, Any> = emptyMap()): CompletableFuture<ByteArray> {
+      val future: CompletableFuture<ByteArray> = CompletableFuture()
+      val returnQueue = WrabbitAdmin.returnQueue()
+      val amqpProperties = createStandardProperties(additionalHeaders).builder()
+         .replyTo(returnQueue.name)
+         .correlationId(UUID.randomUUID().toString())
+         .build()
+      val ownChannel = connection.createChannel()
+      ownChannel.basicPublish(
+         exchange.name,
+         binding.routingKey,
+         amqpProperties,
+         messageBody)
+      ownChannel.basicConsume(returnQueue.name, true, WrabbitReplyListener(ownChannel) {
+         future.complete(it)
+      })
+      return future
    }
 
-   private fun createStandardProperties(additionalHeaders: Map<String, Any>): AMQP.BasicProperties {
+   private fun createStandardProperties(additionalHeaders: Map<String, Any?>): AMQP.BasicProperties {
       val amqpBasicProperties = binding.toAMQPBasicProperties()
-      amqpBasicProperties.headers.putAll(additionalHeaders)
-      return amqpBasicProperties
+      val headers: Map<String, Any?> = amqpBasicProperties.headers
+      val addedHeaders = headers.toMutableMap()
+      addedHeaders.putAll(additionalHeaders)
+      return amqpBasicProperties.builder().headers(addedHeaders).build()
    }
 
 //   fun <MESSAGE_TYPE, REPLY_TYPE> consume(autoAcknowledgement: Boolean = false, consumerTag: String = "") {

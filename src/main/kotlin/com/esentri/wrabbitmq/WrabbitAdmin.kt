@@ -7,7 +7,7 @@ import java.util.*
 // https://www.rabbitmq.com/api-guide.html#exchanges-and-queues
 
 enum class WrabbitExchangeType(val rabbitKey: String) {
-   HEADER("header")
+   HEADER("headers")
 }
 
 object WrabbitAdmin {
@@ -39,17 +39,7 @@ object WrabbitAdmin {
          exchange.name,
          binding.routingKey,
          binding.bindingArguments)
-      return WrabbitMessenger(queue, exchange, binding, this.connection.createChannel())
-   }
-
-   fun createConsumer(queue: WrabbitQueue,
-                      autoAcknowledgement: Boolean = true,
-                      consumerTag: String = "") {
-      channel.basicConsume(queue.name,
-         autoAcknowledgement,
-         consumerTag,
-         WrabbitReplier(connection.createChannel())
-      )
+      return WrabbitMessenger(queue, exchange, binding, this.connection, this.connection.createChannel())
    }
 
 }

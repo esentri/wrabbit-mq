@@ -6,7 +6,7 @@ import com.rabbitmq.client.DefaultConsumer
 import com.rabbitmq.client.Envelope
 import java.lang.RuntimeException
 
-abstract class WrabbitConsumer<MESSAGE_TYPE>(val internalChannel: Channel) : DefaultConsumer(internalChannel) {
+abstract class WrabbitConsumer(val internalChannel: Channel) : DefaultConsumer(internalChannel) {
    internal fun getContext(properties: AMQP.BasicProperties?): MutableMap<String, Any?> {
       val context: MutableMap<String, Any?> = HashMap()
       properties?.headers?.forEach { k, v ->
@@ -19,7 +19,7 @@ abstract class WrabbitConsumer<MESSAGE_TYPE>(val internalChannel: Channel) : Def
 
 class WrabbitReplier<MESSAGE_TYPE, RETURN_TYPE>(
    replyChannel: Channel,
-   val replier: IMessageReplier<MESSAGE_TYPE, RETURN_TYPE>) : WrabbitConsumer<MESSAGE_TYPE>(replyChannel) {
+   val replier: IMessageReplier<MESSAGE_TYPE, RETURN_TYPE>) : WrabbitConsumer(replyChannel) {
 
    override fun handleDelivery(consumerTag: String?,
                                envelope: Envelope,
@@ -52,8 +52,8 @@ class WrabbitReplier<MESSAGE_TYPE, RETURN_TYPE>(
 
 class WrabbitListener<MESSAGE_TYPE>(
    internalChannel: Channel,
-   val listener: IMessageListener<MESSAGE_TYPE>): WrabbitConsumer<MESSAGE_TYPE>(internalChannel) {
-   override fun handleDelivery(consumerTag: String?, envelope: Envelope?, properties: AMQP.BasicProperties?, body: ByteArray?) {
+   val listener: IMessageListener<MESSAGE_TYPE>): WrabbitConsumer(internalChannel) {
+   override fun handleDelivery(consumerTag: String?, envelope: Envelope, properties: AMQP.BasicProperties?, body: ByteArray?) {
       val message: MESSAGE_TYPE = WrabbitConverter.byteArrayToObject(body!!)
       when (listener) {
          is MessageListener -> {
@@ -67,5 +67,14 @@ class WrabbitListener<MESSAGE_TYPE>(
          }
       }
       super.internalChannel.basicAck(envelope.deliveryTag, false)
+   }
+}
+
+class WrabbitReplyListener(
+   internalChannel: Channel,
+   val callback: ((ByteArray) -> Unit)): WrabbitConsumer(internalChannel) {
+   override fun handleDelivery(consumerTag: String?, envelope: Envelope, properties: AMQP.BasicProperties?, body: ByteArray?) {
+      callback(body!!)
+      super.internalChannel.close()
    }
 }
