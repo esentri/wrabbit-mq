@@ -28,6 +28,10 @@ object WrabbitAdmin {
       return WrabbitQueue(name = name)
    }
 
+   fun returnQueue(): WrabbitQueue {
+      return WrabbitQueue(channel.queueDeclare().queue)
+   }
+
    fun bindQueue(exchange: WrabbitExchange,
                  queue: WrabbitQueue,
                  binding: WrabbitBinding): WrabbitMessenger {
