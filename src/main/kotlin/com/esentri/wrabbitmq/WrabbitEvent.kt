@@ -8,10 +8,11 @@ import java.io.Serializable
 import java.util.*
 import kotlin.collections.HashMap
 
-class WrabbitEvent<MESSAGE: Serializable>(val wrabbitTopic: WrabbitTopic, val eventName: String) {
+open class WrabbitEvent<MESSAGE: Serializable>(val wrabbitTopic: WrabbitTopic, val eventName: String) {
 
    private val standardHeaders = WrabbitHeader.standardHeaderForEvent(eventName)
-   private val standardSendingProperties = AMQP.BasicProperties.Builder().headers(standardHeaders).build()
+   internal val standardSendingProperties = AMQP.BasicProperties.Builder().headers(standardHeaders).build()
+   private val standardListenersForEvent = listenerHeadersForEvent()
 
    fun send(message: MESSAGE) {
       val newChannel = NewChannel()
@@ -19,23 +20,15 @@ class WrabbitEvent<MESSAGE: Serializable>(val wrabbitTopic: WrabbitTopic, val ev
       newChannel.close()
    }
 
-   fun sendAndReceive() {
-
-   }
-
-   fun replier() {
-
-   }
-
    fun listener(listener: WrabbitListener<MESSAGE>) {
       val newChannel = NewChannel()
       val queueName = "$eventName.LISTENER.${UUID.randomUUID()}"
-      newChannel.queueDeclare(queueName, true, false, false, emptyMap())
-      newChannel.queueBind(queueName, wrabbitTopic.topicName, "", listenerHeadersForQueue())
-      newChannel.basicConsume(queueName, true, WrabbitConsumerSimple<MESSAGE>(newChannel, listener))
+      newChannel.queueDeclare(queueName, true, true, false, emptyMap())
+      newChannel.queueBind(queueName, wrabbitTopic.topicName, "", standardListenersForEvent)
+      newChannel.basicConsume(queueName, true, WrabbitConsumerSimple<MESSAGE>(newChannel, listener, queueName))
    }
 
-   private fun listenerHeadersForQueue(): Map<String, Any?> {
+   private fun listenerHeadersForEvent(): Map<String, Any?> {
       val headers: MutableMap<String, Any?> = HashMap()
       headers["x-match"] = "all"
       headers[eventName] = null

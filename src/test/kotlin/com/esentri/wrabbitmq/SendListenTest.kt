@@ -3,25 +3,51 @@ package com.esentri.wrabbitmq
 import org.fest.assertions.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
-object TestDomain {
-   object Topic1: WrabbitTopic("TestTopic-1") {
-      val Event1 = WrabbitEvent<String>(this, "TestEvent-1")
-      val Event2 = WrabbitEvent<TestObjectObject>(this, "TestEvent-2")
-   }
-}
-
 class SendListenTest {
 
    @Test
    fun sendListenString() {
       var waitCounter = 0
       val message = "Hello World!"
-      TestDomain.Topic1.Event1.listener {
+      TestDomain.ListenerTopic1.StringEvent.listener {
          assertThat(it).isEqualTo(message)
          waitCounter++
       }
-      TestDomain.Topic1.Event1.send(message)
+      TestDomain.ListenerTopic1.StringEvent.send(message)
       while(waitCounter == 0) {
+         Thread.sleep(300)
+      }
+   }
+
+   @Test
+   fun sendListenString_2_times() {
+      var waitCounter = 0
+      val message = "Hello World!"
+      TestDomain.ListenerTopic1.StringEvent.listener {
+         assertThat(it).isEqualTo(message)
+         waitCounter++
+      }
+      TestDomain.ListenerTopic1.StringEvent.send(message)
+      TestDomain.ListenerTopic1.StringEvent.send(message)
+      while(waitCounter != 2) {
+         Thread.sleep(300)
+      }
+   }
+
+   @Test
+   fun sendListenString_2_listener() {
+      var waitCounter = 0
+      val message = "Hello World!"
+      TestDomain.ListenerTopic1.StringEvent.listener {
+         assertThat(it).isEqualTo(message)
+         waitCounter++
+      }
+      TestDomain.ListenerTopic1.StringEvent.listener {
+         assertThat(it).isEqualTo(message)
+         waitCounter++
+      }
+      TestDomain.ListenerTopic1.StringEvent.send(message)
+      while(waitCounter != 2) {
          Thread.sleep(300)
       }
    }
@@ -30,14 +56,14 @@ class SendListenTest {
    fun sendTestObjectObject() {
       var waitCounter = 0
       val message = TestObjectObject(TestObjectNumberText(12345, "Hello World!"))
-      TestDomain.Topic1.Event2.listener {
+      TestDomain.ListenerTopic1.TestObjectObjectEvent.listener {
          assertThat(it).isInstanceOf(TestObjectObject::class.java)
          assertThat(it.obj).isInstanceOf(TestObjectNumberText::class.java)
          assertThat(it.obj.number).isEqualTo(message.obj.number)
          assertThat(it.obj.text).isEqualTo(message.obj.text)
          waitCounter++
       }
-      TestDomain.Topic1.Event2.send(message)
+      TestDomain.ListenerTopic1.TestObjectObjectEvent.send(message)
       while(waitCounter == 0) {
          Thread.sleep(300)
       }
@@ -47,20 +73,20 @@ class SendListenTest {
    fun sendParallel() {
       var waitCounter = 0
       val message1 = "Hello World!"
-      TestDomain.Topic1.Event1.listener {
+      TestDomain.ListenerTopic1.StringEvent.listener {
          assertThat(it).isEqualTo(message1)
          waitCounter++
       }
       val message2 = TestObjectObject(TestObjectNumberText(12345, "Hello World!"))
-      TestDomain.Topic1.Event2.listener {
+      TestDomain.ListenerTopic1.TestObjectObjectEvent.listener {
          assertThat(it).isInstanceOf(TestObjectObject::class.java)
          assertThat(it.obj).isInstanceOf(TestObjectNumberText::class.java)
          assertThat(it.obj.number).isEqualTo(message2.obj.number)
          assertThat(it.obj.text).isEqualTo(message2.obj.text)
          waitCounter++
       }
-      TestDomain.Topic1.Event2.send(message2)
-      TestDomain.Topic1.Event1.send(message1)
+      TestDomain.ListenerTopic1.TestObjectObjectEvent.send(message2)
+      TestDomain.ListenerTopic1.StringEvent.send(message1)
       while(waitCounter != 2) {
          Thread.sleep(300)
       }

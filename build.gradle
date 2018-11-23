@@ -55,6 +55,10 @@ dependencies {
    testCompile group: 'org.easytesting', name: 'fest-assert', version: '1.4'
 }
 
+test {
+   useJUnitPlatform()
+}
+
 
 compileKotlin {
    kotlinOptions {

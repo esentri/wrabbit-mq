@@ -5,8 +5,6 @@ enum class WrabbitHeader(val key: String) {
    LISTENER("listener"),
    TOPIC_LISTENER("listener-topic");
 
-   fun asAMQPProperty() = hashMapOf<String, Any?>(Pair(this.key, null))
-
    companion object {
       fun standardHeaderForEvent(eventName: String): Map<String, Any?> {
          val returnMap: MutableMap<String, Any?> = HashMap()
@@ -15,6 +13,10 @@ enum class WrabbitHeader(val key: String) {
          }
          returnMap[eventName] = null
          return returnMap
+      }
+
+      fun isWrabbitHeader(key: String): Boolean {
+         return WrabbitHeader.values().map { it.key }.contains(key)
       }
    }
 
