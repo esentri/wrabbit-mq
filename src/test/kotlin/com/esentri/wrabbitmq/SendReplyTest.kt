@@ -43,4 +43,28 @@ class SendReplyTest {
       }
    }
 
+   @Test
+   fun sendReplyStringToInt_2_replier() {
+
+      var waitCounter = 0
+      val message = "12345"
+      TestDomain.ReplierTopic1.StringToInt.replier {
+         assertThat(it).isEqualTo(message)
+         it.toInt()
+      }
+      TestDomain.ReplierTopic1.StringToInt.replier {
+         assertThat(it).isEqualTo(message)
+         it.toInt()
+      }
+      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
+         assertThat(it).isEqualTo(message.toInt())
+         waitCounter++
+      }
+      while(waitCounter <= 0) {
+         Thread.sleep(300)
+      }
+      Thread.sleep(2000)
+      assertThat(waitCounter).isEqualTo(1)
+   }
+
 }
