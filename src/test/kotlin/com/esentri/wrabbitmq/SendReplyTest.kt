@@ -2,12 +2,13 @@ package com.esentri.wrabbitmq
 
 import org.fest.assertions.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 class SendReplyTest {
 
    @Test
    fun sendReplyStringToInt() {
-      var waitCounter = 0
+      val waitCounter = AtomicInteger(0)
       val message = "12345"
       TestDomain.ReplierTopic1.StringToInt.replier {
          assertThat(it).isEqualTo(message)
@@ -15,39 +16,39 @@ class SendReplyTest {
       }
       TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
          assertThat(it).isEqualTo(message.toInt())
-         waitCounter++
+         waitCounter.incrementAndGet()
       }
-      while(waitCounter == 0) {
+      while(waitCounter.get() == 0) {
          Thread.sleep(300)
       }
    }
 
    @Test
-   fun sendReplyStringToInt_2_times() {
-      var waitCounter = 0
+   fun sendReplyStringToInt_X_times() {
+      val waitCounter = AtomicInteger(0)
+      val sentTimes = 100
+
       val message = "12345"
       TestDomain.ReplierTopic1.StringToInt.replier {
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
-      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
-         assertThat(it).isEqualTo(message.toInt())
-         waitCounter++
+      for(i in 1..sentTimes) {
+         TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
+            assertThat(it).isEqualTo(message.toInt())
+            waitCounter.incrementAndGet()
+         }
       }
-      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
-         assertThat(it).isEqualTo(message.toInt())
-         waitCounter++
-      }
-      while(waitCounter != 2) {
+      while(waitCounter.get() < sentTimes) {
          Thread.sleep(300)
       }
    }
 
    @Test
-   fun sendReplyStringToInt_2_replier() {
-
-      var waitCounter = 0
+   fun sendReplyStringToInt_2_replier_default() {
+      val waitCounter = AtomicInteger(0)
       val message = "12345"
+
       TestDomain.ReplierTopic1.StringToInt.replier {
          assertThat(it).isEqualTo(message)
          it.toInt()
@@ -56,15 +57,17 @@ class SendReplyTest {
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
+
       TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
          assertThat(it).isEqualTo(message.toInt())
-         waitCounter++
+         waitCounter.incrementAndGet()
       }
-      while(waitCounter <= 0) {
+
+      while(waitCounter.get() <= 0) {
          Thread.sleep(300)
       }
-      Thread.sleep(2000)
-      assertThat(waitCounter).isEqualTo(1)
+      Thread.sleep(1000)
+      assertThat(waitCounter.get()).isEqualTo(1)
    }
 
 }

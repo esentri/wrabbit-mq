@@ -94,4 +94,33 @@ class SendListenTest {
          Thread.sleep(300)
       }
    }
+
+   @Test
+   fun sendGroups() {
+      val waitCounter = AtomicInteger(0)
+      val sentTimes = 10
+      val message = "5: Hello World!"
+      TestDomain.ListenerTopic1.StringEvent.listener("group1") {
+         assertThat(it).isEqualTo(message)
+         waitCounter.incrementAndGet()
+      }
+      TestDomain.ListenerTopic1.StringEvent.listener("group1") {
+         assertThat(it).isEqualTo(message)
+         waitCounter.incrementAndGet()
+      }
+      TestDomain.ListenerTopic1.StringEvent.listener("group2") {
+         assertThat(it).isEqualTo(message)
+         waitCounter.incrementAndGet()
+      }
+      for(i in 1..sentTimes) {
+         TestDomain.ListenerTopic1.StringEvent.send(message)
+      }
+      while(waitCounter.get() < sentTimes * 2) {
+         Thread.sleep(300)
+      }
+      for(i in 1..5) {
+         Thread.sleep(500)
+      }
+      assertThat(waitCounter.get()).isEqualTo(sentTimes * 2)
+   }
 }

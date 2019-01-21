@@ -15,9 +15,9 @@ open class WrabbitTopic(val topicName: String,
       ConfigChannel.exchangeDeclare(topicName, type, durable)
    }
 
-   fun listener(listener: WrabbitListener<Any>) {
+   fun listener(group: String = UUID.randomUUID().toString(), listener: WrabbitListener<Any>) {
       val newChannel = NewChannel()
-      val queueName = "$topicName.LISTENER.${UUID.randomUUID()}"
+      val queueName = "$topicName.LISTENER.$group"
       newChannel.queueDeclare(queueName, true, true, false, emptyMap())
       newChannel.queueBind(queueName, topicName, "", standardListenerHeadersForTopic)
       newChannel.basicConsume(queueName, true, WrabbitConsumerSimple<Any>(newChannel, listener, queueName))
