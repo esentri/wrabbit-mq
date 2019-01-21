@@ -5,7 +5,7 @@ buildscript {
 
    ext.amqp_client_version = '5.5.0'
 
-   ext.kotlin_version = '1.3.10' // if you change the version here, also change it in the plugin section
+   ext.kotlin_version = '1.3.11' // if you change the version here, also change it in the plugin section
    ext.spring_amqp_version = '2.0.5.RELEASE'
    ext.dokka_version = '0.9.17'
 
@@ -26,7 +26,7 @@ buildscript {
 }
 
 plugins {
-   id 'org.jetbrains.kotlin.jvm' version '1.3.10'
+   id 'org.jetbrains.kotlin.jvm' version '1.3.11'
 }
 
 repositories {
@@ -232,3 +232,6 @@ task startRabbit() {
 task removeRabbit() {
    dependsOn rabbitComposeDownForced
 }
+
+test.dependsOn startRabbit
+test.finalizedBy removeRabbit

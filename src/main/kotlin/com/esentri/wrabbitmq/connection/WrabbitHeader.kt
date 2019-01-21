@@ -6,12 +6,13 @@ enum class WrabbitHeader(val key: String) {
    TOPIC_LISTENER("listener-topic");
 
    companion object {
-      fun standardHeaderForEvent(eventName: String): Map<String, Any?> {
+      fun standardHeaderForEvent(topicName: String, eventName: String): Map<String, Any?> {
          val returnMap: MutableMap<String, Any?> = HashMap()
          WrabbitHeader.values().forEach {
             returnMap[it.key] = null
          }
          returnMap[eventName] = null
+         returnMap[topicName] = null
          return returnMap
       }
 

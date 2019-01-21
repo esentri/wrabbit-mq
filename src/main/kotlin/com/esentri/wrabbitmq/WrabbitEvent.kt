@@ -6,13 +6,14 @@ import com.esentri.wrabbitmq.internal.converter.WrabbitObjectConverter
 import com.rabbitmq.client.AMQP
 import java.io.Serializable
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import kotlin.collections.HashMap
 
-open class WrabbitEvent<MESSAGE: Serializable>(val wrabbitTopic: WrabbitTopic, val eventName: String) {
+open class WrabbitEvent<MESSAGE : Serializable>(val wrabbitTopic: WrabbitTopic, val eventName: String) {
 
-   private val standardHeaders = WrabbitHeader.standardHeaderForEvent(eventName)
+   private val standardHeaders = WrabbitHeader.standardHeaderForEvent(wrabbitTopic.topicName, eventName)
    internal val standardSendingProperties = AMQP.BasicProperties.Builder().headers(standardHeaders).build()
-   private val standardListenersForEvent = listenerHeadersForEvent()
+   private val standardListenerHeadersForEvent = listenerHeadersForEvent()
 
    fun send(message: MESSAGE) {
       val newChannel = NewChannel()
@@ -24,7 +25,7 @@ open class WrabbitEvent<MESSAGE: Serializable>(val wrabbitTopic: WrabbitTopic, v
       val newChannel = NewChannel()
       val queueName = "$eventName.LISTENER.${UUID.randomUUID()}"
       newChannel.queueDeclare(queueName, true, true, false, emptyMap())
-      newChannel.queueBind(queueName, wrabbitTopic.topicName, "", standardListenersForEvent)
+      newChannel.queueBind(queueName, wrabbitTopic.topicName, "", standardListenerHeadersForEvent)
       newChannel.basicConsume(queueName, true, WrabbitConsumerSimple<MESSAGE>(newChannel, listener, queueName))
    }
 

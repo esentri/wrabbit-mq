@@ -12,6 +12,5 @@ class WrabbitConsumerSimple<MESSAGE_TYPE>(exculsiveChannel: Channel,
    override fun handleDelivery(consumerTag: String?, envelope: Envelope, properties: AMQP.BasicProperties?, body: ByteArray?) {
       val message: MESSAGE_TYPE = WrabbitObjectConverter.byteArrayToObject(body!!)
       wrabbitConsumerListener(message)
-      super.getChannel().basicAck(envelope.deliveryTag, false)
    }
 }
