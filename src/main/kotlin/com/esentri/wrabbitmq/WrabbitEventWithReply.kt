@@ -1,9 +1,8 @@
 package com.esentri.wrabbitmq
 
 import com.esentri.wrabbitmq.connection.WrabbitHeader
+import com.esentri.wrabbitmq.internal.SendAndReceiveMessage
 import com.esentri.wrabbitmq.internal.consumer.WrabbitConsumerReplier
-import com.esentri.wrabbitmq.internal.consumer.WrabbitConsumerReplyListener
-import com.esentri.wrabbitmq.internal.converter.WrabbitObjectConverter
 import java.io.Serializable
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -12,32 +11,23 @@ open class WrabbitEventWithReply<MESSAGE: Serializable, RETURN: Serializable>(
    wrabbitTopic: WrabbitTopic,
    eventName: String): WrabbitEvent<MESSAGE>(wrabbitTopic, eventName) {
 
-   fun sendAndReceive(message: MESSAGE): CompletableFuture<RETURN> {
-      val replyChannel = NewChannel()
-      val replyQueue = replyChannel.queueDeclare().queue
-      val correlationID = UUID.randomUUID().toString()
-      sendAndReceiveInternalSend(correlationID, replyQueue, message)
-      val future = CompletableFuture<RETURN>()
-      replyChannel.basicConsume(replyQueue, true, WrabbitConsumerReplyListener<RETURN>(replyChannel,
-         {it -> future.complete(it)},
-         replyQueue))
-      return future
-   }
+   override fun messageBuilder() = WrabbitMessageBuilderReplier<MESSAGE, RETURN>(wrabbitTopic.topicName, super.standardSendingProperties)
 
-   private fun sendAndReceiveInternalSend(correlationID: String, replyQueue: String?, message: MESSAGE) {
-      val sendChannel = NewChannel()
-      sendChannel.basicPublish(wrabbitTopic.topicName, "",
-         super.standardSendingProperties.builder().correlationId(correlationID).replyTo(replyQueue).build(),
-         WrabbitObjectConverter.objectToByteArray(message))
-      sendChannel.close()
-   }
+   fun sendAndReceive(message: MESSAGE): CompletableFuture<RETURN> =
+      SendAndReceiveMessage(wrabbitTopic.topicName,
+         super.standardSendingProperties,
+         message)
 
    fun replier(replier: WrabbitReplier<MESSAGE, RETURN>) {
+      this.replier { _, message ->  replier(message)}
+   }
+
+   fun replier(replier: WrabbitReplierWithContext<MESSAGE, RETURN>) {
       val newChannel = NewChannel()
       val queueName = "$eventName.REPLIER"
       newChannel.queueDeclare(queueName, true, true, false, emptyMap())
       newChannel.queueBind(queueName, wrabbitTopic.topicName, "", replierHeadersForEvent())
-      newChannel.basicConsume(queueName, false, WrabbitConsumerReplier<MESSAGE, RETURN>(newChannel, replier, queueName))
+      newChannel.basicConsume(queueName, false, WrabbitConsumerReplier(newChannel, replier, queueName))
    }
 
    private fun replierHeadersForEvent(): MutableMap<String, Any?> {

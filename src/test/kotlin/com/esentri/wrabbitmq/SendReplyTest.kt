@@ -10,7 +10,7 @@ class SendReplyTest {
    fun sendReplyStringToInt() {
       val waitCounter = AtomicInteger(0)
       val message = "12345"
-      TestDomain.ReplierTopic1.StringToInt.replier {
+      TestDomain.ReplierTopic1.StringToInt.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
@@ -29,7 +29,7 @@ class SendReplyTest {
       val sentTimes = 100
 
       val message = "12345"
-      TestDomain.ReplierTopic1.StringToInt.replier {
+      TestDomain.ReplierTopic1.StringToInt.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
@@ -49,11 +49,11 @@ class SendReplyTest {
       val waitCounter = AtomicInteger(0)
       val message = "12345"
 
-      TestDomain.ReplierTopic1.StringToInt.replier {
+      TestDomain.ReplierTopic1.StringToInt.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
-      TestDomain.ReplierTopic1.StringToInt.replier {
+      TestDomain.ReplierTopic1.StringToInt.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
@@ -68,6 +68,33 @@ class SendReplyTest {
       }
       Thread.sleep(1000)
       assertThat(waitCounter.get()).isEqualTo(1)
+   }
+
+   @Test
+   fun sendAndReplyWithContext() {
+      val waitCounter = AtomicInteger(0)
+      val message = TestObjectObject(TestObjectNumberText(12345, "hello world"))
+      val propertyKey = "test"
+      val propertyValue = "property"
+
+      TestDomain.ReplierTopic1.TestObjectObjectToString.replier { context, it ->
+         assertThat(it.obj.number).isEqualTo(message.obj.number)
+         assertThat(it.obj.text).isEqualTo(message.obj.text)
+         assertThat(context[propertyKey].toString()).isEqualToIgnoringCase(propertyValue)
+         waitCounter.incrementAndGet()
+         it.obj.text
+      }
+      TestDomain.ReplierTopic1.TestObjectObjectToString
+         .messageBuilder()
+         .property(propertyKey, propertyValue)
+         .sendAndReceive(message)
+         .thenAccept {
+            assertThat(it).isEqualTo(message.obj.text)
+         }
+
+      while (waitCounter.get() == 0) {
+         Thread.sleep(300)
+      }
    }
 
 }

@@ -19,11 +19,15 @@ open class WrabbitTopic {
    }
 
    fun listener(group: String = UUID.randomUUID().toString(), listener: WrabbitListener<Any>) {
+      this.listener { _, message-> listener(message) }
+   }
+
+   fun listener(group: String = UUID.randomUUID().toString(), listener: WrabbitListenerWithContext<Any>) {
       val newChannel = NewChannel()
       val queueName = "$topicName.LISTENER.$group"
       newChannel.queueDeclare(queueName, true, true, false, emptyMap())
       newChannel.queueBind(queueName, topicName, "", standardListenerHeadersForTopic)
-      newChannel.basicConsume(queueName, true, WrabbitConsumerSimple<Any>(newChannel, listener, queueName))
+      newChannel.basicConsume(queueName, true, WrabbitConsumerSimple(newChannel, listener, queueName))
    }
 
    private fun listenerHeadersForEvent(): Map<String, Any?> {
