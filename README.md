@@ -31,7 +31,7 @@ built-in support for the `broadcast-response`-pattern.
 First, you need to create your domain; i.e. declare all topics and corresponding events. Then you can
 send and _send and receive_ on base of the events.
 
-For receiving the events you have three methods:
+For receiving the events you have two methods:
 
 * replier,
 * listener.
