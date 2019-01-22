@@ -49,6 +49,55 @@ In addition, `listener`s
 
 *(creating a domain like this is optional but recommended)*
 
+<details>
+   <summary>Kotlin</summary>
+  ```kotlin
+  object TestDomain {
+     object ListenerTopic1: WrabbitTopic("TestTopic-1") {
+        val StringEvent = WrabbitEvent<String>(this, "TT1-TE-1")
+        val TestObjectObjectEvent = WrabbitEvent<TestObjectObject>(this, "TT1-TE-2")
+     }
+    
+     object ReplierTopic1: WrabbitTopic("TestTopic-2") {
+        val StringToInt = WrabbitEventWithReply<String, Int>(this, "TT2-TE1")
+        val TestObjectObjectToString = WrabbitEventWithReply<TestObjectObject, String>(this, "TT2-TE2")
+        val TestObjectObjectToTestObjectNumberText = WrabbitEventWithReply<TestObjectObject, TestObjectNumberText>(this, "TT2-TE3")
+     }
+  }
+  ```
+</details>
+  
+<details>
+   <summary>Java</summary>
+  ```java
+  public final class TestDomain {
+  
+     private TestDomain(){}
+  
+     public static final SimpleListenerTopic ListenerTopic1 = new SimpleListenerTopic();
+     public static final SimpleReplierTopic ReplierTopic1 = new SimpleReplierTopic();
+  
+     public static final class SimpleListenerTopic extends WrabbitTopic {
+        private SimpleListenerTopic() {
+           super("Test-Topic-1");
+        }
+  
+        public WrabbitEvent<String> StringEvent = new WrabbitEvent<>(this, "TT1-TE-1");
+        public WrabbitEvent<TestObjectObject> TestObjectObjectEvent = new WrabbitEvent<>(this, "TT1-TE-2");
+     }
+  
+     public static final class SimpleReplierTopic extends WrabbitTopic {
+        private SimpleReplierTopic() {
+           super("Test-Topic-2");
+        }
+  
+        public WrabbitEventWithReply<String, Integer> StringToInt = new WrabbitEventWithReply<>(this, "TT2-TE1");
+        public WrabbitEventWithReply<TestObjectObject, String> TestObjectObjectToString = new WrabbitEventWithReply<>(this, "TT2-TE2");
+     }
+  }
+  ```
+</details>
+
 ### Use the domain
 
 ## Configuration

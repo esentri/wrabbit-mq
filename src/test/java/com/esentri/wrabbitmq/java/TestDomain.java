@@ -25,7 +25,5 @@ public final class TestDomain {
 
       public WrabbitEventWithReply<String, Integer> StringToInt = new WrabbitEventWithReply<>(this, "TT2-TE1");
       public WrabbitEventWithReply<TestObjectObject, String> TestObjectObjectToString = new WrabbitEventWithReply<>(this, "TT2-TE2");
-      public WrabbitEventWithReply<TestObjectObject, TestObjectNumberText> TestObjectObjectToTestObjectNumberText = new WrabbitEventWithReply<>(this, "TT2" +
-         "-TE3");
    }
 }
