@@ -45,30 +45,34 @@ In addition, `listener`s
 * can be registered on a topic as well (not only on events like `replier`) and
 * can be grouped; i.e. only one of the group listeners will be informed (in contrary to all listeners).
 
+**For Java users:** please make sure to use `WrabbitEvent` and `WrabbitEventReplier` from the `com.esentri.wrabbitmq.java` package.
+
 ### Create your domain
 
 *(creating a domain like this is optional but recommended)*
 
 <details>
    <summary>Kotlin</summary>
-  ```kotlin
-  object TestDomain {
-     object ListenerTopic1: WrabbitTopic("TestTopic-1") {
-        val StringEvent = WrabbitEvent<String>(this, "TT1-TE-1")
-        val TestObjectObjectEvent = WrabbitEvent<TestObjectObject>(this, "TT1-TE-2")
-     }
-    
-     object ReplierTopic1: WrabbitTopic("TestTopic-2") {
-        val StringToInt = WrabbitEventWithReply<String, Int>(this, "TT2-TE1")
-        val TestObjectObjectToString = WrabbitEventWithReply<TestObjectObject, String>(this, "TT2-TE2")
-        val TestObjectObjectToTestObjectNumberText = WrabbitEventWithReply<TestObjectObject, TestObjectNumberText>(this, "TT2-TE3")
-     }
-  }
-  ```
+   
+   ```kotlin
+   object TestDomain {
+      object ListenerTopic1: WrabbitTopic("TestTopic-1") {
+         val StringEvent = WrabbitEvent<String>(this, "TT1-TE-1")
+         val TestObjectObjectEvent = WrabbitEvent<TestObjectObject>(this, "TT1-TE-2")
+      }
+
+      object ReplierTopic1: WrabbitTopic("TestTopic-2") {
+         val StringToInt = WrabbitEventWithReply<String, Int>(this, "TT2-TE1")
+         val TestObjectObjectToString = WrabbitEventWithReply<TestObjectObject, String>(this, "TT2-TE2")
+         val TestObjectObjectToTestObjectNumberText = WrabbitEventWithReply<TestObjectObject, TestObjectNumberText>(this, "TT2-TE3")
+      }
+   }
+   ```
 </details>
   
 <details>
    <summary>Java</summary>
+   
   ```java
   public final class TestDomain {
   
@@ -99,6 +103,121 @@ In addition, `listener`s
 </details>
 
 ### Use the domain
+
+* sending an event
+  * Kotlin
+     ```kotlin
+      TestDomain.ListenerTopic1.StringEvent.send("Hello world!")
+     ```
+  * Java
+     ```java
+      TestDomain.ListenerTopic1.StringEvent.send("Hello world!");
+     ```
+     
+* sending an event with additional context (apart of the message itself)
+  * you can add as many properties as you want
+  * Kotlin
+     ```kotlin
+      TestDomain.ListenerTopic1.StringEvent
+         .messageBuilder()
+         .property("key", "value")
+         .send(message)
+     ```
+  * Java
+     ```java
+      TestDomain.ListenerTopic1.StringEvent
+         .messageBuilder()
+         .property("key", "value")
+         .send(message);
+     ```
+     
+* send an event an receive a reply (if any)
+  * Kotlin
+    ```kotlin
+      TestDomain.ReplierTopic1.StringToInt.sendAndReceive("12345").thenAccept {
+         // do something with it
+      }
+    ```
+  * Java
+    ```java
+      TestDomain.ReplierTopic1.StringToInt.sendAndReceive("12345").thenAccept(it -> {
+         // do something with it
+      });
+    ```
+     
+* listen to an event
+  * Kotlin
+    ```kotlin
+    TestDomain.ListenerTopic1.StringEvent.listener { it ->
+       // do something with it
+    }
+    ```
+    
+  * Java
+    ```java
+    TestDomain.ListenerTopic1.StringEvent.listener(it -> {
+       // do something with it
+    });
+    ```
+    
+* listen to an event and receive the context
+  * Kotlin
+    ```kotlin
+      TestDomain.ListenerTopic1.StringEvent.listener { context, it ->
+         // do something
+      }
+    ```
+  * Java
+    ```java
+      TestDomain.ListenerTopic1.StringEvent.listener((context, it) -> {
+         // do something
+      });
+    ```
+    
+* listen to an event as part of a group
+  * Kotlin
+    ```kotlin
+      TestDomain.ListenerTopic1.StringEvent.listener("group1") { it ->
+         // do something with it
+      }
+    ```
+  * Java
+    ```java
+    TestDomain.ListenerTopic1.StringEvent.listener("group1", it -> {
+       // do something with it
+    });
+    ```
+
+* reply to an event
+  * Kotlin
+    ```kotlin
+    TestDomain.ReplierTopic1.StringToInt.replier { it ->
+       it.toInt()
+    }
+    ```
+  * Java
+    ```java
+    TestDomain.ReplierTopic1.StringToInt.replier(it ->
+       Integer.parseInt(it);
+    );
+    ```
+    
+* reply to an event with context
+  * Kotlin
+    ```kotlin
+      TestDomain.ReplierTopic1.TestObjectObjectToString.replier { context, it ->
+         // context[propertyKey]
+         it.obj.text
+      }
+    ```
+  * Java
+    ```java
+      TestDomain.ReplierTopic1.TestObjectObjectToString.replier2((context, it) -> {
+         // context.get(propertyKey)
+         return it.getObj().getText();
+      });
+    ```
+    * currently, you need to use `replier2` in Java
 
 ## Configuration
 
