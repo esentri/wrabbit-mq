@@ -131,7 +131,7 @@ In addition, `listener`s
          .send(message);
      ```
      
-* send an event an receive a reply (if any)
+* send an event and receive a reply (if any)
   * Kotlin
     ```kotlin
       TestDomain.ReplierTopic1.StringToInt.sendAndReceive("12345").thenAccept {
@@ -217,7 +217,7 @@ In addition, `listener`s
          return it.getObj().getText();
       });
     ```
-    * currently, you need to use `replier2` in Java
+    * **NOTE**: currently, you need to use `replier2` in Java
 
 ## Configuration
 
