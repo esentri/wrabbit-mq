@@ -15,8 +15,8 @@ abstract class WrabbitConsumerBase(val exculsiveChannel: Channel, val exclusiveQ
       return context
    }
 
-   fun finalize() {
-      super.getChannel().queueDelete(exclusiveQueueName)
-      super.getChannel().close()
-   }
+//   fun finalize() {
+//      super.getChannel().queueDelete(exclusiveQueueName)
+//      super.getChannel().close()
+//   }
 }

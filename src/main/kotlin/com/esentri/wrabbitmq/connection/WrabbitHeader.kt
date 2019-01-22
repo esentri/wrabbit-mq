@@ -7,13 +7,13 @@ enum class WrabbitHeader(val key: String) {
 
    companion object {
       fun standardHeaderForEvent(topicName: String, eventName: String): Map<String, Any?> {
-         val returnMap: MutableMap<String, Any?> = HashMap()
+         val headerMap: MutableMap<String, Any?> = HashMap()
          WrabbitHeader.values().forEach {
-            returnMap[it.key] = null
+            headerMap[it.key] = null
          }
-         returnMap[eventName] = null
-         returnMap[topicName] = null
-         return returnMap
+         headerMap[eventName] = null
+         headerMap[topicName] = null
+         return headerMap
       }
 
       fun isWrabbitHeader(key: String): Boolean {

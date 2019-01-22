@@ -80,4 +80,29 @@ public class SendReplyTest {
       Thread.sleep(1000);
       assertThat(waitCounter.get()).isEqualTo(1);
    }
+
+   @Test
+   public void sendAndReplyWithContext() throws InterruptedException {
+      final AtomicInteger waitCounter = new AtomicInteger(0);
+      final TestObjectObject message = new TestObjectObject(new TestObjectNumberText(12345, "hello world"));
+      final String propertyKey = "test";
+      final String propertyValue = "property";
+
+      TestDomain.ReplierTopic1.TestObjectObjectToString.replier2((context, it) -> {
+         assertThat(it.getObj().getNumber()).isEqualTo(message.getObj().getNumber());
+         assertThat(it.getObj().getText()).isEqualTo(message.getObj().getText());
+         assertThat(context.get(propertyKey).toString()).isEqualToIgnoringCase(propertyValue);
+         waitCounter.incrementAndGet();
+         return it.getObj().getText();
+      });
+      TestDomain.ReplierTopic1.TestObjectObjectToString
+         .messageBuilder()
+         .property(propertyKey, propertyValue)
+         .sendAndReceive(message)
+         .thenAccept(it -> assertThat(it).isEqualTo(message.getObj().getText()));
+
+      while (waitCounter.get() == 0) {
+         Thread.sleep(300);
+      }
+   }
 }

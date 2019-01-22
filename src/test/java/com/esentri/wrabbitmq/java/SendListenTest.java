@@ -140,4 +140,26 @@ public class SendListenTest {
 
       assertThat(waitCounter.get()).isEqualTo(sentTimes * 2);
    }
+
+   @Test
+   public void sendAndListenWithContext() throws InterruptedException {
+      final AtomicInteger waitCounter = new AtomicInteger(0);
+      final String message = "6: Hello World!";
+      String propertyKey = "test";
+      String propertyValue = "property";
+
+      TestDomain.ListenerTopic1.StringEvent.listener((context, it) -> {
+         assertThat(it).isEqualTo(message);
+         assertThat(context.get(propertyKey).toString()).isEqualToIgnoringCase(propertyValue);
+         waitCounter.incrementAndGet();
+      });
+      TestDomain.ListenerTopic1.StringEvent
+         .messageBuilder()
+         .property(propertyKey, propertyValue)
+         .send(message);
+
+      while (waitCounter.get() == 0) {
+         Thread.sleep(300);
+      }
+   }
 }
