@@ -8,7 +8,7 @@ import java.io.Serializable
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
-class WrabbitEventWithReply<MESSAGE: Serializable, RETURN: Serializable>(
+open class WrabbitEventWithReply<MESSAGE: Serializable, RETURN: Serializable>(
    wrabbitTopic: WrabbitTopic,
    eventName: String): WrabbitEvent<MESSAGE>(wrabbitTopic, eventName) {
 

@@ -76,11 +76,12 @@ class SendListenTest {
    fun sendParallel() {
       val waitCounter = AtomicInteger(0)
       val message1 = "4: Hello World!"
+      val message2 = TestObjectObject(TestObjectNumberText(12345, "2: Hello World!"))
+
       TestDomain.ListenerTopic1.StringEvent.listener {
          assertThat(it).isEqualTo(message1)
          waitCounter.incrementAndGet()
       }
-      val message2 = TestObjectObject(TestObjectNumberText(12345, "2: Hello World!"))
       TestDomain.ListenerTopic1.TestObjectObjectEvent.listener {
          assertThat(it).isInstanceOf(TestObjectObject::class.java)
          assertThat(it.obj).isInstanceOf(TestObjectNumberText::class.java)

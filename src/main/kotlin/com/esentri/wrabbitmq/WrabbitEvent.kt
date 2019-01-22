@@ -6,7 +6,6 @@ import com.esentri.wrabbitmq.internal.converter.WrabbitObjectConverter
 import com.rabbitmq.client.AMQP
 import java.io.Serializable
 import java.util.*
-import java.util.concurrent.CompletableFuture
 import kotlin.collections.HashMap
 
 open class WrabbitEvent<MESSAGE : Serializable>(val wrabbitTopic: WrabbitTopic, val eventName: String) {

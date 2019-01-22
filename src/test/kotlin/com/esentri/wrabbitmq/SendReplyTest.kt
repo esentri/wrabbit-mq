@@ -14,7 +14,7 @@ class SendReplyTest {
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
-      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
+      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenAccept {
          assertThat(it).isEqualTo(message.toInt())
          waitCounter.incrementAndGet()
       }
@@ -34,7 +34,7 @@ class SendReplyTest {
          it.toInt()
       }
       for(i in 1..sentTimes) {
-         TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
+         TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenAccept {
             assertThat(it).isEqualTo(message.toInt())
             waitCounter.incrementAndGet()
          }
@@ -58,7 +58,7 @@ class SendReplyTest {
          it.toInt()
       }
 
-      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenApply {
+      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenAccept {
          assertThat(it).isEqualTo(message.toInt())
          waitCounter.incrementAndGet()
       }

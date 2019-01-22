@@ -5,13 +5,16 @@ import com.esentri.wrabbitmq.internal.consumer.WrabbitConsumerSimple
 import com.rabbitmq.client.BuiltinExchangeType
 import java.util.*
 
-open class WrabbitTopic(val topicName: String,
-                   type: BuiltinExchangeType = BuiltinExchangeType.HEADERS,
-                        durable: Boolean = true) {
+open class WrabbitTopic {
 
+   val topicName: String
    private val standardListenerHeadersForTopic = listenerHeadersForEvent()
 
-   init {
+   @JvmOverloads
+   constructor(topicName: String,
+               type: BuiltinExchangeType = BuiltinExchangeType.HEADERS,
+               durable: Boolean = true) {
+      this.topicName = topicName
       ConfigChannel.exchangeDeclare(topicName, type, durable)
    }
 

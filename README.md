@@ -41,10 +41,15 @@ even if you registered multiple repliers on the same topic/event. This will ensu
 
 `listener`s will always receive any event they are registered for. But they cannot reply.
 
-In addition, `listener`s can be registered on a topic as well (not only on events like `replier`).
+In addition, `listener`s 
+* can be registered on a topic as well (not only on events like `replier`) and
+* can be grouped; i.e. only one of the group listeners will be informed (in contrary to all listeners).
 
 ### Create your domain
 
+*(creating a domain like this is optional but recommended)*
+
+### Use the domain
 
 ## Configuration
 
