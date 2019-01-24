@@ -24,7 +24,7 @@ open class WrabbitEventWithReply<MESSAGE: Serializable, RETURN: Serializable>(
 
    fun replier(replier: WrabbitReplierWithContext<MESSAGE, RETURN>) {
       val newChannel = NewChannel()
-      val queueName = "$eventName.REPLIER"
+      val queueName = "${wrabbitTopic.topicName}.$eventName.REPLIER"
       newChannel.queueDeclare(queueName, true, true, false, emptyMap())
       newChannel.queueBind(queueName, wrabbitTopic.topicName, "", replierHeadersForEvent())
       newChannel.basicConsume(queueName, false, WrabbitConsumerReplier(newChannel, replier, queueName))
