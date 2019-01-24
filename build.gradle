@@ -88,59 +88,84 @@ artifacts {
    archives javadocJar
 }
 
+if (project.hasProperty('signing.keyId') &&
+   project.hasProperty('signing.password') &&
+   project.hasProperty('signing.secretKeyRingFile')) {
 
-publishing {
-   publications {
-      mavenJava(MavenPublication) {
-         customizePom(pom)
-         groupId group_id
-         artifactId project_name
-         version project_version
+   publishing {
+      publications {
+         mavenJava(MavenPublication) {
+            customizePom(pom)
+            groupId group_id
+            artifactId project_name
+            version project_version
 
-         from components.java
+            from components.java
 
-         // create the sign pom artifact
-         pom.withXml {
-            def pomFile = file("${project.buildDir}/generated-pom.xml")
-            writeTo(pomFile)
-            def pomAscFile = signing.sign(pomFile).signatureFiles[0]
-            artifact(pomAscFile) {
-               classifier = null
-               extension = 'pom.asc'
-            }
-         }
-
-         artifact(sourceJar) {
-            classifier = 'sources'
-         }
-         artifact(javadocJar) {
-            classifier = 'javadoc'
-         }
-
-         // create the signed artifacts
-         project.tasks.signArchives.signatureFiles.each {
-            artifact(it) {
-               def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
-               if (matcher.find()) {
-                  classifier = matcher.group(1)
-               } else {
+            // create the sign pom artifact
+            pom.withXml {
+               def pomFile = file("${project.buildDir}/generated-pom.xml")
+               writeTo(pomFile)
+               def pomAscFile = signing.sign(pomFile).signatureFiles[0]
+               artifact(pomAscFile) {
                   classifier = null
+                  extension = 'pom.asc'
                }
-               extension = 'jar.asc'
+            }
+
+            artifact(sourceJar) {
+               classifier = 'sources'
+            }
+            artifact(javadocJar) {
+               classifier = 'javadoc'
+            }
+
+            // create the signed artifacts
+            project.tasks.signArchives.signatureFiles.each {
+               artifact(it) {
+                  def matcher = it.file =~ /-(sources|javadoc)\.jar\.asc$/
+                  if (matcher.find()) {
+                     classifier = matcher.group(1)
+                  } else {
+                     classifier = null
+                  }
+                  extension = 'jar.asc'
+               }
+            }
+         }
+      }
+
+      repositories {
+         maven {
+            url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            credentials {
+               username project.hasProperty('sonatypeUsername') ? project.property('sonatypeUsername') : ''
+               password project.hasProperty('sonatypePassword') ? project.property('sonatypePassword') : ''
             }
          }
       }
    }
 
-   repositories {
-      maven {
-         url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-         credentials {
-            username sonatypeUsername
-            password sonatypePassword
-         }
+   model {
+      tasks.generatePomFileForMavenJavaPublication {
+         destination = file("$buildDir/generated-pom.xml")
+      }
+      tasks.publishMavenJavaPublicationToMavenLocal {
+         dependsOn project.tasks.signArchives
+      }
+      tasks.publishMavenJavaPublicationToMavenRepository {
+         dependsOn project.tasks.signArchives
       }
    }
+
+   signing {
+      sign configurations.archives
+   }
+}
+
+dokka {
+   outputFormat = 'javadoc'
+   outputDirectory = javaDocDir
 }
 
 def customizePom(pom) {
@@ -193,27 +218,6 @@ def customizePom(pom) {
          }
       }
    }
-}
-
-model {
-   tasks.generatePomFileForMavenJavaPublication {
-      destination = file("$buildDir/generated-pom.xml")
-   }
-   tasks.publishMavenJavaPublicationToMavenLocal {
-      dependsOn project.tasks.signArchives
-   }
-   tasks.publishMavenJavaPublicationToMavenRepository {
-      dependsOn project.tasks.signArchives
-   }
-}
-
-signing {
-   sign configurations.archives
-}
-
-dokka {
-   outputFormat = 'javadoc'
-   outputDirectory = javaDocDir
 }
 
 

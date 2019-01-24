@@ -2,63 +2,75 @@ package com.esentri.wrabbitmq
 
 import org.fest.assertions.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.io.Serializable
+import java.util.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 class SendReplyTest {
 
+   private val topic = WrabbitTopic("TestTopic-Replier")
+   private fun <MESSAGE: Serializable, REPLY: Serializable> newEvent() =
+      WrabbitEventWithReply<MESSAGE, REPLY>(topic, UUID.randomUUID().toString())
+
    @Test
    fun sendReplyStringToInt() {
-      val waitCounter = AtomicInteger(0)
+      val event = newEvent<String, Int>()
+      val countDownLatch = CountDownLatch(1)
       val message = "12345"
-      TestDomain.ReplierTopic1.StringToInt.replier { it ->
+
+      event.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
-      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenAccept {
+      event.sendAndReceive(message).thenAccept {
          assertThat(it).isEqualTo(message.toInt())
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      while(waitCounter.get() == 0) {
-         Thread.sleep(300)
-      }
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendReplyStringToInt_X_times() {
-      val waitCounter = AtomicInteger(0)
+      val event = newEvent<String, Int>()
       val sentTimes = 100
+      val countDownLatch = CountDownLatch(sentTimes)
 
       val message = "12345"
-      TestDomain.ReplierTopic1.StringToInt.replier { it ->
+      event.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
       for(i in 1..sentTimes) {
-         TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenAccept {
+         event.sendAndReceive(message).thenAccept {
             assertThat(it).isEqualTo(message.toInt())
-            waitCounter.incrementAndGet()
+            countDownLatch.countDown()
          }
       }
-      while(waitCounter.get() < sentTimes) {
-         Thread.sleep(300)
-      }
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendReplyStringToInt_2_replier_default() {
+      val event = newEvent<String, Int>()
+      // AtomicInteger is used to check if any events occur after the expected.
+      // This would not be possible with CountDownLatch.
       val waitCounter = AtomicInteger(0)
       val message = "12345"
 
-      TestDomain.ReplierTopic1.StringToInt.replier { it ->
+      event.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
-      TestDomain.ReplierTopic1.StringToInt.replier { it ->
+      event.replier { it ->
          assertThat(it).isEqualTo(message)
          it.toInt()
       }
 
-      TestDomain.ReplierTopic1.StringToInt.sendAndReceive(message).thenAccept {
+      event.sendAndReceive(message).thenAccept {
          assertThat(it).isEqualTo(message.toInt())
          waitCounter.incrementAndGet()
       }
@@ -72,7 +84,8 @@ class SendReplyTest {
 
    @Test
    fun sendAndReplyWithContext() {
-      val waitCounter = AtomicInteger(0)
+      val event = newEvent<String, Int>()
+      val countDownLatch = CountDownLatch(1)
       val message = TestObjectObject(TestObjectNumberText(12345, "hello world"))
       val propertyKey = "test"
       val propertyValue = "property"
@@ -81,7 +94,7 @@ class SendReplyTest {
          assertThat(it.obj.number).isEqualTo(message.obj.number)
          assertThat(it.obj.text).isEqualTo(message.obj.text)
          assertThat(context[propertyKey].toString()).isEqualToIgnoringCase(propertyValue)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
          it.obj.text
       }
       TestDomain.ReplierTopic1.TestObjectObjectToString
@@ -92,9 +105,7 @@ class SendReplyTest {
             assertThat(it).isEqualTo(message.obj.text)
          }
 
-      while (waitCounter.get() == 0) {
-         Thread.sleep(300)
-      }
+      Await(countDownLatch)
    }
 
 }

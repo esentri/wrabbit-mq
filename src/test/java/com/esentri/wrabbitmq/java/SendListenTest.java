@@ -1,134 +1,143 @@
 package com.esentri.wrabbitmq.java;
 
+import com.esentri.wrabbitmq.WrabbitTopic;
 import org.junit.jupiter.api.Test;
+
+import java.io.Serializable;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
+import static com.esentri.wrabbitmq.java.TestFunctions.Await;
 import static org.fest.assertions.Assertions.assertThat;
 
 public class SendListenTest {
 
+   private final WrabbitTopic topic = new WrabbitTopic("TestTopic-Listener-Java");
+
+   private <MESSAGE extends Serializable> WrabbitEvent<MESSAGE> newEvent() {
+      return new WrabbitEvent<>(topic, UUID.randomUUID().toString());
+   }
+
    @Test
-   public void sendListenString() throws InterruptedException {
-      final AtomicInteger waitCounter = new AtomicInteger(0);
+   public void sendListenString() {
+      final WrabbitEvent<String> event = newEvent();
+      final CountDownLatch countDownLatch = new CountDownLatch(1);
       final String message = "1: Hello World!";
 
-      TestDomain.ListenerTopic1.StringEvent.listener(it -> {
+      event.listener(it -> {
          assertThat(it).isEqualTo(message);
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
-      TestDomain.ListenerTopic1.StringEvent.send(message);
+      event.send(message);
 
-      while(waitCounter.get() == 0) {
-         Thread.sleep(300);
-      }
+      Await(countDownLatch);
    }
 
    @Test
-   public void sendListenString_X_times() throws InterruptedException {
-      final AtomicInteger waitCounter = new AtomicInteger(0);
+   public void sendListenString_X_times() {
+      final WrabbitEvent<String> event = newEvent();
       final String message = "2: Hello World!";
       final int sentTimes = 1000;
+      final CountDownLatch countDownLatch = new CountDownLatch(sentTimes);
 
-      TestDomain.ListenerTopic1.StringEvent.listener(it -> {
+      event.listener(it -> {
          assertThat(it).isEqualTo(message);
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
       IntStream.range(0, sentTimes).forEach(it ->
-         TestDomain.ListenerTopic1.StringEvent.send(message)
+         event.send(message)
       );
 
-      while(waitCounter.get() < sentTimes) {
-         Thread.sleep(300);
-      }
+      Await(countDownLatch);
    }
 
    @Test
-   public void sendListenString_2_listener() throws InterruptedException {
-      final AtomicInteger waitCounter = new AtomicInteger(0);
+   public void sendListenString_2_listener() {
+      final WrabbitEvent<String> event = newEvent();
+      final CountDownLatch countDownLatch = new CountDownLatch(2);
       final String message = "3: Hello World!";
 
-      TestDomain.ListenerTopic1.StringEvent.listener(it -> {
+      event.listener(it -> {
          assertThat(it).isEqualTo(message);
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
-      TestDomain.ListenerTopic1.StringEvent.listener(it -> {
+      event.listener(it -> {
          assertThat(it).isEqualTo(message);
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
-      TestDomain.ListenerTopic1.StringEvent.send(message);
+      event.send(message);
 
-      while(waitCounter.get() != 2) {
-         Thread.sleep(300);
-      }
+      Await(countDownLatch);
    }
 
    @Test
-   public void sendTestObjectObject() throws InterruptedException {
-      final AtomicInteger waitCounter = new AtomicInteger(0);
+   public void sendTestObjectObject() {
+      final WrabbitEvent<TestObjectObject> event = newEvent();
+      final CountDownLatch countDownLatch = new CountDownLatch(1);
       final TestObjectObject message = new TestObjectObject(new TestObjectNumberText(12345, "1: Hello World!"));
 
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.listener(it -> {
+      event.listener(it -> {
          assertThat(it).isInstanceOf(TestObjectObject.class);
-         final TestObjectObject castedIt = (TestObjectObject) it;
-         assertThat(castedIt.getObj()).isInstanceOf(TestObjectNumberText.class);
-         assertThat(castedIt.getObj().getNumber()).isEqualTo(message.getObj().getNumber());
-         assertThat(castedIt.getObj().getText()).isEqualTo(message.getObj().getText());
-         waitCounter.incrementAndGet();
+         assertThat(it.getObj()).isInstanceOf(TestObjectNumberText.class);
+         assertThat(it.getObj().getNumber()).isEqualTo(message.getObj().getNumber());
+         assertThat(it.getObj().getText()).isEqualTo(message.getObj().getText());
+         countDownLatch.countDown();
       });
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.send(message);
+      event.send(message);
 
-      while(waitCounter.get() == 0) {
-         Thread.sleep(300);
-      }
+      Await(countDownLatch);
    }
 
    @Test
-   public void sendParallel() throws InterruptedException {
-      final AtomicInteger waitCounter = new AtomicInteger(0);
+   public void sendParallel() {
+      final WrabbitEvent<String> event1 = newEvent();
+      final WrabbitEvent<TestObjectObject> event2 = newEvent();
+      final CountDownLatch countDownLatch = new CountDownLatch(2);
       final String message1 = "3: Hello World!";
       final TestObjectObject message2 = new TestObjectObject(new TestObjectNumberText(12345, "2: Hello World!"));
 
-      TestDomain.ListenerTopic1.StringEvent.listener(it -> {
+      event1.listener(it -> {
          assertThat(it).isEqualTo(message1);
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
-
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.listener(it -> {
+      event2.listener(it -> {
          assertThat(it).isInstanceOf(TestObjectObject.class);
          assertThat(it.getObj()).isInstanceOf(TestObjectNumberText.class);
          assertThat(it.getObj().getNumber()).isEqualTo(message2.getObj().getNumber());
          assertThat(it.getObj().getText()).isEqualTo(message2.getObj().getText());
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.send(message2);
-      TestDomain.ListenerTopic1.StringEvent.send(message1);
+      event1.send(message1);
+      event2.send(message2);
 
-      while(waitCounter.get() != 2) {
-         Thread.sleep(300);
-      }
+      Await(countDownLatch);
    }
 
    @Test
    public void sendGroups() throws InterruptedException {
+      final WrabbitEvent<String> event = newEvent();
+      // AtomicInteger is used to check if after the expected events others will occure.
+      // This would not be possible with CountDownLatch.
       final AtomicInteger waitCounter = new AtomicInteger(0);
       final String message = "5: Hello World!";
       final int sentTimes = 10;
 
-      TestDomain.ListenerTopic1.StringEvent.listener("group1", it -> {
+      event.listener("group1", it -> {
          assertThat(it).isEqualTo(message);
          waitCounter.incrementAndGet();
       });
-      TestDomain.ListenerTopic1.StringEvent.listener("group1", it -> {
+      event.listener("group1", it -> {
          assertThat(it).isEqualTo(message);
          waitCounter.incrementAndGet();
       });
-      TestDomain.ListenerTopic1.StringEvent.listener("group2", it -> {
+      event.listener("group2", it -> {
          assertThat(it).isEqualTo(message);
          waitCounter.incrementAndGet();
       });
 
-      IntStream.range(0, sentTimes).forEach(it -> TestDomain.ListenerTopic1.StringEvent.send(message));
+      IntStream.range(0, sentTimes).forEach(it -> event.send(message));
 
       while(waitCounter.get() < sentTimes * 2) {
          Thread.sleep(300);
@@ -142,24 +151,23 @@ public class SendListenTest {
    }
 
    @Test
-   public void sendAndListenWithContext() throws InterruptedException {
-      final AtomicInteger waitCounter = new AtomicInteger(0);
+   public void sendAndListenWithContext() {
+      final WrabbitEvent<String> event = newEvent();
+      final CountDownLatch countDownLatch = new CountDownLatch(1);
       final String message = "6: Hello World!";
       String propertyKey = "test";
       String propertyValue = "property";
 
-      TestDomain.ListenerTopic1.StringEvent.listener((context, it) -> {
+      event.listener((context, it) -> {
          assertThat(it).isEqualTo(message);
          assertThat(context.get(propertyKey).toString()).isEqualToIgnoringCase(propertyValue);
-         waitCounter.incrementAndGet();
+         countDownLatch.countDown();
       });
-      TestDomain.ListenerTopic1.StringEvent
+      event
          .messageBuilder()
          .property(propertyKey, propertyValue)
          .send(message);
 
-      while (waitCounter.get() == 0) {
-         Thread.sleep(300);
-      }
+      Await(countDownLatch);
    }
 }

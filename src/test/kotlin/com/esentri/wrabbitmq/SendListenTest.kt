@@ -2,119 +2,138 @@ package com.esentri.wrabbitmq
 
 import org.fest.assertions.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.io.Serializable
+import java.util.*
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
 
 class SendListenTest {
 
+   private val topic = WrabbitTopic("TestTopic-Listeners")
+
+   private fun <MESSAGE: Serializable> newEvent(): WrabbitEvent<MESSAGE> =
+     WrabbitEvent(topic, UUID.randomUUID().toString())
+
    @Test
    fun sendListenString() {
-      val waitCounter = AtomicInteger(0)
+      val wrabbitEvent = newEvent<String>()
+      val countDownLatch = CountDownLatch(1)
       val message = "1: Hello World!"
-      TestDomain.ListenerTopic1.StringEvent.listener { it ->
+
+      wrabbitEvent.listener { it ->
          assertThat(it).isEqualTo(message)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.StringEvent.send(message)
-      while (waitCounter.get() == 0) {
-         Thread.sleep(300)
-      }
+      wrabbitEvent.send(message)
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendListenString_X_times() {
-      val waitCounter = AtomicInteger(0)
+      val wrabbitEvent = newEvent<String>()
       val sentTimes = 1000
+      val countDownLatch = CountDownLatch(sentTimes)
       val message = "2: Hello World!"
-      TestDomain.ListenerTopic1.StringEvent.listener { it ->
+
+      wrabbitEvent.listener { it ->
          assertThat(it).isEqualTo(message)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
       for (i in 1..sentTimes) {
-         TestDomain.ListenerTopic1.StringEvent.send(message)
+         wrabbitEvent.send(message)
       }
-      while (waitCounter.get() < sentTimes) {
-         Thread.sleep(300)
-      }
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendListenString_2_listener() {
-      val waitCounter = AtomicInteger(0)
+      val wrabbitEvent = newEvent<String>()
+      val countDownLatch = CountDownLatch(2)
       val message = "3: Hello World!"
-      TestDomain.ListenerTopic1.StringEvent.listener { it ->
+
+      wrabbitEvent.listener { it ->
          assertThat(it).isEqualTo(message)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.StringEvent.listener { it ->
+      wrabbitEvent.listener { it ->
          assertThat(it).isEqualTo(message)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.StringEvent.send(message)
-      while (waitCounter.get() != 2) {
-         Thread.sleep(300)
-      }
+      wrabbitEvent.send(message)
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendTestObjectObject() {
-      val waitCounter = AtomicInteger(0)
+      val wrabbitEvent = newEvent<TestObjectObject>()
+      val countDownLatch = CountDownLatch(1)
       val message = TestObjectObject(TestObjectNumberText(12345, "1: Hello World!"))
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.listener { it ->
+
+      wrabbitEvent.listener { it ->
          assertThat(it).isInstanceOf(TestObjectObject::class.java)
          assertThat(it.obj).isInstanceOf(TestObjectNumberText::class.java)
          assertThat(it.obj.number).isEqualTo(message.obj.number)
          assertThat(it.obj.text).isEqualTo(message.obj.text)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.send(message)
-      while (waitCounter.get() == 0) {
-         Thread.sleep(300)
-      }
+      wrabbitEvent.send(message)
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendParallel() {
-      val waitCounter = AtomicInteger(0)
+      val wrabbitEvent1 = newEvent<String>()
+      val wrabbitEvent2 = newEvent<TestObjectObject>()
+      val countDownLatch = CountDownLatch(2)
       val message1 = "4: Hello World!"
       val message2 = TestObjectObject(TestObjectNumberText(12345, "2: Hello World!"))
 
-      TestDomain.ListenerTopic1.StringEvent.listener { it ->
+      wrabbitEvent1.listener { it ->
          assertThat(it).isEqualTo(message1)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.listener { it ->
+      wrabbitEvent2.listener { it ->
          assertThat(it).isInstanceOf(TestObjectObject::class.java)
          assertThat(it.obj).isInstanceOf(TestObjectNumberText::class.java)
          assertThat(it.obj.number).isEqualTo(message2.obj.number)
          assertThat(it.obj.text).isEqualTo(message2.obj.text)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.TestObjectObjectEvent.send(message2)
-      TestDomain.ListenerTopic1.StringEvent.send(message1)
-      while (waitCounter.get() != 2) {
-         Thread.sleep(300)
-      }
+
+      wrabbitEvent1.send(message1)
+      wrabbitEvent2.send(message2)
+
+      Await(countDownLatch)
    }
 
    @Test
    fun sendGroups() {
+      val wrabbitEvent = newEvent<String>()
+      // AtomicInteger is used to check if after all expected events another one is arriving
+      // This would not be possible with CountDownLatch
       val waitCounter = AtomicInteger(0)
       val sentTimes = 10
       val message = "5: Hello World!"
-      TestDomain.ListenerTopic1.StringEvent.listener("group1") { it ->
+
+      wrabbitEvent.listener("group1") { it ->
          assertThat(it).isEqualTo(message)
          waitCounter.incrementAndGet()
       }
-      TestDomain.ListenerTopic1.StringEvent.listener("group1") { it ->
+      wrabbitEvent.listener("group1") { it ->
          assertThat(it).isEqualTo(message)
          waitCounter.incrementAndGet()
       }
-      TestDomain.ListenerTopic1.StringEvent.listener("group2") { it ->
+      wrabbitEvent.listener("group2") { it ->
          assertThat(it).isEqualTo(message)
          waitCounter.incrementAndGet()
       }
+
       for (i in 1..sentTimes) {
-         TestDomain.ListenerTopic1.StringEvent.send(message)
+         wrabbitEvent.send(message)
       }
       while (waitCounter.get() < sentTimes * 2) {
          Thread.sleep(300)
@@ -127,23 +146,22 @@ class SendListenTest {
 
    @Test
    fun sendAndListenWithContext() {
-      val waitCounter = AtomicInteger(0)
-      val message = "1: Hello World!"
+      val wrabbitEvent = newEvent<String>()
+      val countDownLatch = CountDownLatch(1)
+      val message = "6: Hello World!"
       val propertyKey = "test"
       val propertyValue = "property"
 
-      TestDomain.ListenerTopic1.StringEvent.listener { context, it ->
+      wrabbitEvent.listener { context, it ->
          assertThat(it).isEqualTo(message)
          assertThat(context[propertyKey].toString()).isEqualToIgnoringCase(propertyValue)
-         waitCounter.incrementAndGet()
+         countDownLatch.countDown()
       }
-      TestDomain.ListenerTopic1.StringEvent
+      wrabbitEvent
          .messageBuilder()
          .property(propertyKey, propertyValue)
          .send(message)
 
-      while (waitCounter.get() == 0) {
-         Thread.sleep(300)
-      }
+      Await(countDownLatch)
    }
 }
