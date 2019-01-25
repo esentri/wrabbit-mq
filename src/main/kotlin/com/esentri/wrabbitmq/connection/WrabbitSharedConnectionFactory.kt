@@ -1,10 +1,15 @@
 package com.esentri.wrabbitmq.connection
 
 import com.esentri.wrabbitmq.*
+import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 
 object WrabbitSharedConnectionFactory : ConnectionFactory() {
+
+
+
+
 
    private var connection: Connection? = null
 
@@ -25,5 +30,6 @@ object WrabbitSharedConnectionFactory : ConnectionFactory() {
       this.connection = super.newConnection()
       return connection as Connection
    }
+
 
 }
