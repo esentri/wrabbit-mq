@@ -100,7 +100,7 @@ public class SendReplyTest {
       final String propertyKey = "test";
       final String propertyValue = "property";
 
-      event.replier2((context, it) -> {
+      event.replier((context, it) -> {
          assertThat(it.getObj().getNumber()).isEqualTo(message.getObj().getNumber());
          assertThat(it.getObj().getText()).isEqualTo(message.getObj().getText());
          assertThat(context.get(propertyKey).toString()).isEqualToIgnoringCase(propertyValue);

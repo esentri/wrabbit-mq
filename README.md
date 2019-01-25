@@ -212,12 +212,36 @@ In addition, `listener`s
     ```
   * Java
     ```java
-      TestDomain.ReplierTopic1.TestObjectObjectToString.replier2((context, it) -> {
+      TestDomain.ReplierTopic1.TestObjectObjectToString.replier((context, it) -> {
          // context.get(propertyKey)
          return it.getObj().getText();
       });
     ```
-    * **NOTE**: currently, you need to use `replier2` in Java
+
+### Exceptions
+
+Currently, the important exceptions are logged to `error` with `SLF4J`.
+
+In addition you can do the following:
+
+* receive exceptions from a replier on sender side (e.g. you send a message and wait for a reply but the replier failed)
+  * those exceptions are wrapped inside `WrabbitBasicReplyException` which contains information about the topic and event
+    the message was originally sent to
+  * Kotlin
+    ```kotlin
+      event.sendAndReceive("hello").thenAccept {
+         countDownLatch.countDown()
+      }.exceptionally {
+      // do something with it
+      }
+    ```
+  * Java
+    ```java
+    event.sendAndReceive("hello").thenAccept(it -> { })
+         .exceptionally(it -> { 
+          // do something with it
+        });
+    ```
 
 ## Configuration
 
@@ -230,6 +254,7 @@ Username = "guest"
 Password = "guest"
 Timeout = 30000
 HeartBeat = 30
+ReplyTimeOutMS = 5000
 ```
 
 To change any of the values please set the corresponding environment variable
@@ -243,6 +268,7 @@ To change any of the values please set the corresponding environment variable
   "wrabbit.password"
   "wrabbit.connection-timeout"
   "wrabbit.requested-heartbeat"
+  "wrabbit.reply-timeout-ms"
   ```
 
 * *or* in Spring
@@ -253,8 +279,12 @@ To change any of the values please set the corresponding environment variable
   "spring.rabbitmq.password"
   "spring.rabbitmq.connection-timeout"
   "spring.rabbitmq.requested-heartbeat"
+  "spring.rabbitmq.reply-timeout-ms"
   ```
 
+## Logging
+
+`WrabbitMQ` uses `SLF4J` so you can integrate it easily with your current logging system.
 
 ## Contributions
 

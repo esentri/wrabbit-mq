@@ -13,28 +13,29 @@ open class WrabbitEventWithReply<MESSAGE: Serializable, RETURN: Serializable>(
 
    override fun messageBuilder() = WrabbitMessageBuilderReplier<MESSAGE, RETURN>(wrabbitTopic.topicName, super.standardSendingProperties)
 
-   fun sendAndReceive(message: MESSAGE): CompletableFuture<RETURN> =
+   @JvmOverloads
+   fun sendAndReceive(message: MESSAGE, timeoutMS: Long = WrabbitReplyTimeoutMS()): CompletableFuture<RETURN> =
       SendAndReceiveMessage(wrabbitTopic.topicName,
          super.standardSendingProperties,
-         message)
+         message,
+         timeoutMS)
 
    fun replier(replier: WrabbitReplier<MESSAGE, RETURN>) {
       this.replier { _, message ->  replier(message)}
    }
 
    fun replier(replier: WrabbitReplierWithContext<MESSAGE, RETURN>) {
-      val newChannel = NewChannel()
+      val newChannel = ThreadChannel()
       val queueName = "${wrabbitTopic.topicName}.$eventName.REPLIER"
       newChannel.queueDeclare(queueName, true, true, false, emptyMap())
       newChannel.queueBind(queueName, wrabbitTopic.topicName, "", replierHeadersForEvent())
-      newChannel.basicConsume(queueName, false, WrabbitConsumerReplier(newChannel, replier, queueName))
+      newChannel.basicConsume(queueName, false, WrabbitConsumerReplier(newChannel, replier))
    }
 
    private fun replierHeadersForEvent(): MutableMap<String, Any?> {
       val headers: MutableMap<String, Any?> = HashMap()
       headers["x-match"] = "all"
-      headers[eventName] = null
-      headers[WrabbitHeader.REPLIER.key] = null
+      headers[WrabbitHeader.EVENT.key] = eventName
       return headers
    }
 

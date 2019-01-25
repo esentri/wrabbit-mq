@@ -23,7 +23,7 @@ open class WrabbitMessageBuilder<MESSAGE>(private val topicName: String,
 }
 
 class WrabbitMessageBuilderReplier<MESSAGE, RETURN>(private val topicName: String,
-                                            private val basicProperties: AMQP.BasicProperties) :
+                                                    private val basicProperties: AMQP.BasicProperties) :
    WrabbitMessageBuilder<MESSAGE>(topicName, basicProperties) {
 
    override fun property(key: String, value: Any): WrabbitMessageBuilderReplier<MESSAGE, RETURN> {
@@ -31,8 +31,9 @@ class WrabbitMessageBuilderReplier<MESSAGE, RETURN>(private val topicName: Strin
       return this
    }
 
-   fun sendAndReceive(content: MESSAGE): CompletableFuture<RETURN> {
+   @JvmOverloads
+   fun sendAndReceive(content: MESSAGE, timeoutMS: Long = WrabbitReplyTimeoutMS()): CompletableFuture<RETURN> {
       this.headers.putAll(basicProperties.headers)
-      return SendAndReceiveMessage<RETURN>(topicName, basicProperties.builder().headers(this.headers).build(), content!!)
+      return SendAndReceiveMessage<RETURN>(topicName, basicProperties.builder().headers(this.headers).build(), content!!, timeoutMS)
    }
 }
