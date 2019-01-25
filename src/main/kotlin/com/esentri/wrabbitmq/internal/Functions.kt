@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture
 fun SendMessage(topicName: String, sendingProperties: AMQP.BasicProperties, message: Any) {
    val newChannel = NewChannel()
    newChannel.basicPublish(topicName, "", sendingProperties, WrabbitObjectConverter.objectToByteArray(message))
-   newChannel.close()
+   //newChannel.close()
 }
 
 fun <RETURN> SendAndReceiveMessage(topicName: String, sendingProperties: AMQP.BasicProperties, message: Any): CompletableFuture<RETURN> {

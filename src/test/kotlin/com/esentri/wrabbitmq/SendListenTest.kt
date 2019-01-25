@@ -3,6 +3,7 @@ package com.esentri.wrabbitmq
 import org.fest.assertions.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.LockSupport
 
 class SendListenTest {
 

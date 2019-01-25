@@ -1,6 +1,8 @@
 package com.esentri.wrabbitmq
 
 import com.esentri.wrabbitmq.connection.WrabbitSharedConnectionFactory
+import com.rabbitmq.client.Channel
+import java.lang.ref.Cleaner
 
 // DEFAULTS
 const val WrabbitDefaultHost = "localhost"
@@ -10,6 +12,9 @@ const val WrabbitDefaultPassword = "guest"
 const val WrabbitDefaultTimeout = "30000"
 const val WrabbitDefaultHeartBeat = "30"
 
+// Channels are closed by the cleaner
+// when the channel object gets GC'ed.
+private val cleaner:Cleaner = Cleaner.create()
 
 private fun getConfig(alternative1: String, alternative2: String, default: String): String =
    System.getProperty(alternative1)?: System.getProperty(alternative2) ?: default
@@ -26,4 +31,18 @@ fun WrabbitHeartBeat(): Int = getConfig("wrabbit.heartbeat", "spring.rabbitmq.re
 // CONNECTION
 fun SharedConnection() = WrabbitSharedConnectionFactory.newConnection()
 val ConfigChannel = SharedConnection().createChannel()
-fun NewChannel() = SharedConnection().createChannel()
+
+fun NewChannel():Channel {
+    return threadLocalChannel.get()
+}
+
+private val threadLocalChannel: ThreadLocal<Channel> = ThreadLocal.withInitial {
+    val channel:Channel = SharedConnection().createChannel()
+    cleaner.register(channel) { channel.close() }
+    return@withInitial channel
+}
+
+
+
+
+
