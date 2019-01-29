@@ -1,5 +1,5 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.esentri.oss/wrabbit-mq/badge.svg)](https://search.maven.org/artifact/com.esentri.oss/wrabbit-mq)
-
+[![Build Status](https://travis-ci.org/esentri/wrabbit-mq.svg?branch=master)](https://travis-ci.org/esentri/wrabbit-mq)
 
 # WRABBIT-MQ
 
