@@ -2,5 +2,5 @@ language: java
 services:
   - docker
 jdk:
-  - openjdk8
-  - oraclejdk8
+  - openjdk11
+  - oraclejdk11
