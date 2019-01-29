@@ -81,6 +81,10 @@ task sourceJar(type: Jar) {
 
 def javaDocDir = "$buildDir/docs/javadoc"
 
+javadoc {
+   exclude 'module-info.java'
+}
+
 task javadocJar(type: Jar, dependsOn: javadoc) {
    archiveClassifier.set('javadoc')
    from javaDocDir
