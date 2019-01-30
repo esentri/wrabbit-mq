@@ -1,7 +1,7 @@
 module com.esentri.wrabbitmq {
    requires transitive kotlin.stdlib;
    requires kotlin.stdlib.jdk8;
-   //requires org.slf4j;
-   //requires com.rabbitmq;
+   requires com.rabbitmq.client;
+   requires slf4j.api;
    exports com.esentri.wrabbitmq;
 }
