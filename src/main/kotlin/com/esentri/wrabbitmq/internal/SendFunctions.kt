@@ -29,10 +29,11 @@ fun <RETURN> SendAndReceiveMessage(
 
    return WaitForMessage<RETURN>(replyQueue, timeoutMS).handle { value, exception ->
       if (value == null) {
-         val wrappedException = when (exception) {
+         val e = exception.cause!!
+         val wrappedException = when (e) {
             is TimeoutException -> WrabbitReplyTimeoutException(sendingProperties, exception)
             else -> {
-               WrabbitReplyBasicException(sendingProperties, exception!!)
+               WrabbitReplyBasicException(sendingProperties, e!!)
             }
          }
          ReplyLogger.error("{} -> {}", wrappedException.message, exception.toString())
@@ -48,9 +49,8 @@ private fun <RETURN> WaitForMessage(queueName: String, timeoutMS: Long): Complet
    val consumer = WrabbitConsumerReplyListener<RETURN>(replyChannel, replyFuture)
    replyChannel.basicConsume(queueName, true, consumer)
 
-   replyFuture.orTimeout(timeoutMS, TimeUnit.MILLISECONDS).exceptionally {
+   return replyFuture.orTimeout(timeoutMS, TimeUnit.MILLISECONDS).exceptionally {
       replyChannel.basicCancel(consumer.consumerTag)
       throw it
    }
-   return replyFuture
 }
