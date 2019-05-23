@@ -3,11 +3,13 @@ package com.esentri.wrabbitmq.java;
 import com.esentri.wrabbitmq.WrabbitEventWithReply;
 import com.esentri.wrabbitmq.WrabbitTopic;
 import com.esentri.wrabbitmq.exceptions.WrabbitReplyBasicException;
+import com.esentri.wrabbitmq.exceptions.WrabbitReplyTimeoutException;
 import com.esentri.wrabbitmq.java.testhelper.TestException;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import static com.esentri.wrabbitmq.java.TestFunctions.Await;
 import static com.esentri.wrabbitmq.java.TestFunctions.NewEventWithReply;
@@ -22,40 +24,31 @@ public class ExceptionTest {
    }
 
    @Test
-   public void noReplier_withDefaultTimeout() {
-      CountDownLatch countDownLatch = new CountDownLatch(1);
+   public void noReplier_withDefaultTimeout() throws ExecutionException, InterruptedException {
       WrabbitEventWithReply<String, String> event = newEventWithReply();
-      event.sendAndReceive("hello").thenAccept(it -> { })
-           .exceptionally(it -> {
-              assertThat(it.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
-              assertThat(it.getMessage())
+      event.sendAndReceive("hello").handle((v, e) -> {
+              assertThat(e.getCause()).isInstanceOf(WrabbitReplyTimeoutException.class);
+              assertThat(e.getMessage())
                  .contains(event.getEventName())
                  .contains(topic.getTopicName());
-              countDownLatch.countDown();
               return null;
-           });
-      Await(countDownLatch);
+           }).get();
    }
 
    @Test
    public void noReplier_withCustomTimeout() {
-      CountDownLatch countDownLatch = new CountDownLatch(1);
       WrabbitEventWithReply<String, String> event = newEventWithReply();
-      event.sendAndReceive("hello", 10).thenAccept(it -> { })
-           .exceptionally(it -> {
-              assertThat(it.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
-              assertThat(it.getMessage())
+      event.sendAndReceive("hello", 10).handle((v, e) -> {
+              assertThat(e.getCause()).isInstanceOf(WrabbitReplyTimeoutException.class);
+              assertThat(e.getMessage())
                  .contains(event.getEventName())
                  .contains(topic.getTopicName());
-              countDownLatch.countDown();
               return null;
            });
-      Await(countDownLatch);
    }
 
    @Test
    public void replierThrowsException() {
-      CountDownLatch countDownLatch = new CountDownLatch(1);
       WrabbitEventWithReply<String, String> event = newEventWithReply();
       String exceptionMessage = "hello world";
 
@@ -63,16 +56,12 @@ public class ExceptionTest {
          throw new TestException(exceptionMessage);
       });
 
-      event.sendAndReceive("hello").thenAccept(it -> { })
-           .exceptionally(it -> {
-              assertThat(it.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
-              assertThat(it.getCause().getCause()).isInstanceOf(TestException.class);
-              assertThat(it.getCause().getCause()).hasMessage(exceptionMessage);
-              countDownLatch.countDown();
+      event.sendAndReceive("hello").handle((v, e) -> {
+              assertThat(e.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
+              assertThat(e.getCause().getCause()).isInstanceOf(TestException.class);
+              assertThat(e.getCause().getCause()).hasMessage(exceptionMessage);
               return null;
            });
-
-      Await(countDownLatch);
    }
 
 }

@@ -18,11 +18,11 @@ class ExceptionTest {
    fun noReplier_withDefaultTimeout() {
       val event = newEventWithReply<String, String>()
       event.sendAndReceive("hello").handle {_, e ->
-         assertThat(e.cause).isInstanceOf(WrabbitReplyBasicException::class.java)
+         assertThat(e.cause).isInstanceOf(WrabbitReplyTimeoutException::class.java)
          assertThat(e.message)
             .contains(event.eventName)
             .contains(topic.topicName)
-      }
+      }.get()
    }
 
    @Test
@@ -48,7 +48,6 @@ class ExceptionTest {
          assertThat(e.cause!!.cause).isInstanceOf(TestException::class.java)
          assertThat(e.cause!!.cause).hasMessage(exceptionMessage)
       }.get()
-
    }
 
    @Test
