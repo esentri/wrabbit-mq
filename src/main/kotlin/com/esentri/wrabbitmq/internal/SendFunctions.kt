@@ -1,7 +1,8 @@
 package com.esentri.wrabbitmq.internal
 
 import com.esentri.wrabbitmq.ThreadChannel
-import com.esentri.wrabbitmq.exceptions.WrabbitBasicReplyException
+import com.esentri.wrabbitmq.exceptions.WrabbitReplyBasicException
+import com.esentri.wrabbitmq.exceptions.WrabbitReplyTimeoutException
 import com.esentri.wrabbitmq.internal.consumer.WrabbitConsumerReplyListener
 import com.esentri.wrabbitmq.internal.converter.WrabbitObjectConverter
 import com.rabbitmq.client.AMQP
@@ -28,7 +29,12 @@ fun <RETURN> SendAndReceiveMessage(
 
    return WaitForMessage<RETURN>(replyQueue, timeoutMS).handle { value, exception ->
       if (value == null) {
-         val wrappedException = WrabbitBasicReplyException(sendingProperties, exception!!)
+         val wrappedException = when (exception) {
+            is TimeoutException -> WrabbitReplyTimeoutException(sendingProperties, exception)
+            else -> {
+               WrabbitReplyBasicException(sendingProperties, exception!!)
+            }
+         }
          ReplyLogger.error("{} -> {}", wrappedException.message, exception.toString())
          throw wrappedException
       }
@@ -43,10 +49,8 @@ private fun <RETURN> WaitForMessage(queueName: String, timeoutMS: Long): Complet
    replyChannel.basicConsume(queueName, true, consumer)
 
    replyFuture.orTimeout(timeoutMS, TimeUnit.MILLISECONDS).exceptionally {
-      if (it is TimeoutException) {
-         replyChannel.basicCancel(consumer.consumerTag)
-      }
-      null
+      replyChannel.basicCancel(consumer.consumerTag)
+      throw it
    }
    return replyFuture
 }
