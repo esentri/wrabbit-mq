@@ -2,7 +2,7 @@ package com.esentri.wrabbitmq.java;
 
 import com.esentri.wrabbitmq.WrabbitEventWithReply;
 import com.esentri.wrabbitmq.WrabbitTopic;
-import com.esentri.wrabbitmq.exceptions.WrabbitBasicReplyException;
+import com.esentri.wrabbitmq.exceptions.WrabbitReplyBasicException;
 import com.esentri.wrabbitmq.java.testhelper.TestException;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ public class ExceptionTest {
       WrabbitEventWithReply<String, String> event = newEventWithReply();
       event.sendAndReceive("hello").thenAccept(it -> { })
            .exceptionally(it -> {
-              assertThat(it.getCause()).isInstanceOf(WrabbitBasicReplyException.class);
+              assertThat(it.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
               assertThat(it.getMessage())
                  .contains(event.getEventName())
                  .contains(topic.getTopicName());
@@ -43,7 +43,7 @@ public class ExceptionTest {
       WrabbitEventWithReply<String, String> event = newEventWithReply();
       event.sendAndReceive("hello", 10).thenAccept(it -> { })
            .exceptionally(it -> {
-              assertThat(it.getCause()).isInstanceOf(WrabbitBasicReplyException.class);
+              assertThat(it.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
               assertThat(it.getMessage())
                  .contains(event.getEventName())
                  .contains(topic.getTopicName());
@@ -65,7 +65,7 @@ public class ExceptionTest {
 
       event.sendAndReceive("hello").thenAccept(it -> { })
            .exceptionally(it -> {
-              assertThat(it.getCause()).isInstanceOf(WrabbitBasicReplyException.class);
+              assertThat(it.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
               assertThat(it.getCause().getCause()).isInstanceOf(TestException.class);
               assertThat(it.getCause().getCause()).hasMessage(exceptionMessage);
               countDownLatch.countDown();

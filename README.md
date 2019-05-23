@@ -11,7 +11,7 @@ built-in support for the `broadcast-response`-pattern.
 * Gradle
 
   ```
-  compile 'com.esentri.oss:wrabbit-mq:3.0.0'
+  compile 'com.esentri.oss:wrabbit-mq:3.2.2'
   ```
   
 * Maven
@@ -20,7 +20,7 @@ built-in support for the `broadcast-response`-pattern.
   <dependency>
     <groupId>com.esentri.oss</groupId>
     <artifactId>wrabbit-mq</artifactId>
-    <version>3.0.0</version>
+    <version>3.2.2</version>
     <type>pom</type>
   </dependency>
   ```
