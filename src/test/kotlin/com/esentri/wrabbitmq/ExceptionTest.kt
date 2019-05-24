@@ -2,7 +2,9 @@ package com.esentri.wrabbitmq
 
 import com.esentri.wrabbitmq.exceptions.WrabbitReplyBasicException
 import com.esentri.wrabbitmq.exceptions.WrabbitReplyTimeoutException
+import com.esentri.wrabbitmq.exceptions.WrabbitSerializationException
 import com.esentri.wrabbitmq.testhelper.CustomException
+import com.esentri.wrabbitmq.testhelper.NonSerializableException
 import com.esentri.wrabbitmq.testhelper.TestException
 import org.fest.assertions.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -22,7 +24,7 @@ class ExceptionTest {
          assertThat(e.message)
             .contains(event.eventName)
             .contains(topic.topicName)
-      }.get()
+      }.join()
    }
 
    @Test
@@ -33,7 +35,7 @@ class ExceptionTest {
          assertThat(e.message)
             .contains(event.eventName)
             .contains(topic.topicName)
-      }.get()
+      }.join()
    }
 
    @Test
@@ -47,7 +49,7 @@ class ExceptionTest {
          assertThat(e.cause).isInstanceOf(WrabbitReplyBasicException::class.java)
          assertThat(e.cause!!.cause).isInstanceOf(TestException::class.java)
          assertThat(e.cause!!.cause).hasMessage(exceptionMessage)
-      }.get()
+      }.join()
    }
 
    @Test
@@ -61,7 +63,20 @@ class ExceptionTest {
          assertThat(e.cause).isInstanceOf(WrabbitReplyBasicException::class.java)
          assertThat(e.cause!!.cause).isInstanceOf(CustomException::class.java)
          assertThat(e.cause!!.cause).hasMessage(exceptionMessage)
-      }.get()
+      }.join()
+   }
+
+   @Test
+   fun `non serializable exception test`() {
+      val event = newEventWithReply<String, String>()
+      event.replier { _ ->
+         throw NonSerializableException()
+      }
+      event.sendAndReceive("hello", 10000).handle {_, e ->
+         assertThat(e.cause).isInstanceOf(WrabbitReplyBasicException::class.java)
+         assertThat(e.cause!!.cause).isInstanceOf(WrabbitSerializationException::class.java)
+         assertThat(e.cause!!.cause!!.cause).isNull()
+      }.join()
    }
 
 }
