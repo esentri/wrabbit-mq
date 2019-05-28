@@ -2,11 +2,13 @@ package com.esentri.wrabbitmq.internal.consumer
 
 import com.esentri.wrabbitmq.WrabbitReplierWithContext
 import com.esentri.wrabbitmq.connection.WrabbitHeader
+import com.esentri.wrabbitmq.exceptions.WrabbitSerializationException
 import com.esentri.wrabbitmq.internal.ReplyLogger
 import com.esentri.wrabbitmq.internal.converter.WrabbitObjectConverter
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Envelope
+import java.io.NotSerializableException
 
 // TODO replace with new ThreadChannel method
 class WrabbitConsumerReplier<MESSAGE_TYPE, RETURN_TYPE>(channel: Channel,
@@ -23,7 +25,14 @@ class WrabbitConsumerReplier<MESSAGE_TYPE, RETURN_TYPE>(channel: Channel,
             properties.headers[WrabbitHeader.TOPIC.key],
             properties.headers[WrabbitHeader.EVENT.key],
             e)
-         sendAnswer(properties, responseByteArray(e))
+
+         var serializedException: ByteArray
+         try {
+            serializedException = responseByteArray(e)
+            sendAnswer(properties, serializedException)
+         } catch (serializationException: Exception) {
+            sendAnswer(properties, responseByteArray(serializationException))
+         }
       } finally {
          super.getChannel().basicAck(envelope.deliveryTag, false)
       }

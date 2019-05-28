@@ -4,7 +4,9 @@ import com.esentri.wrabbitmq.WrabbitEventWithReply;
 import com.esentri.wrabbitmq.WrabbitTopic;
 import com.esentri.wrabbitmq.exceptions.WrabbitReplyBasicException;
 import com.esentri.wrabbitmq.exceptions.WrabbitReplyTimeoutException;
+import com.esentri.wrabbitmq.exceptions.WrabbitSerializationException;
 import com.esentri.wrabbitmq.java.testhelper.TestException;
+import com.esentri.wrabbitmq.testhelper.NonSerializableException;
 import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
@@ -32,7 +34,7 @@ public class ExceptionTest {
                  .contains(event.getEventName())
                  .contains(topic.getTopicName());
               return null;
-           }).get();
+           }).join();
    }
 
    @Test
@@ -44,7 +46,7 @@ public class ExceptionTest {
                  .contains(event.getEventName())
                  .contains(topic.getTopicName());
               return null;
-           });
+           }).join();
    }
 
    @Test
@@ -61,7 +63,21 @@ public class ExceptionTest {
               assertThat(e.getCause().getCause()).isInstanceOf(TestException.class);
               assertThat(e.getCause().getCause()).hasMessage(exceptionMessage);
               return null;
-           });
+           }).join();
+   }
+
+   @Test
+   public void nonSerializableExceptionTest() {
+      WrabbitEventWithReply<String, String> event = newEventWithReply();
+      event.replier (it -> {
+         throw new NonSerializableException();
+      });
+      event.sendAndReceive("hello", 10000).handle((v, e) -> {
+         assertThat(e.getCause()).isInstanceOf(WrabbitReplyBasicException.class);
+         assertThat(e.getCause().getCause()).isInstanceOf(WrabbitSerializationException.class);
+         assertThat(e.getCause().getCause().getCause()).isNull();
+         return null;
+      }).join();
    }
 
 }
